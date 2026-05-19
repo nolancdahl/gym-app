@@ -1,1 +1,4 @@
 node_modules/
+.claude/
+.netlify/
+.DS_Store
