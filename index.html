@@ -4960,6 +4960,132 @@ function subscribeToProfile(uid) {
   }, (err) => console.warn("profile listen error:", err));
 }
 
+// === CHAT SYNC ===
+// History is gym-specific (Arnold is gym's persona), stored at users/<uid>/profile/gym_chat_history_v1
+// as { value: [{id, when, messages}], updatedAt }. Current in-flight chat lives in
+// gym_chat_current_v1 so resuming the popup mid-conversation works across devices.
+const CHAT_HISTORY_DOC = "gym_chat_history_v1";
+const CHAT_CURRENT_DOC = "gym_chat_current_v1";
+let __chatHistoryUnsub = null;
+let __chatCurrentUnsub = null;
+let __chatHistoryTimer = null;
+let __chatCurrentTimer = null;
+let __chatFromRemote = false;
+
+function mergeChatHistory(localArr, remoteArr) {
+  // Union by id; for matching ids, keep the one with the higher `when` (latest write wins).
+  const byId = new Map();
+  for (const h of (Array.isArray(localArr) ? localArr : [])) {
+    if (h && h.id) byId.set(h.id, h);
+  }
+  for (const h of (Array.isArray(remoteArr) ? remoteArr : [])) {
+    if (!h || !h.id) continue;
+    const prev = byId.get(h.id);
+    if (!prev || (h.when || 0) >= (prev.when || 0)) byId.set(h.id, h);
+  }
+  return [...byId.values()].sort((a, b) => (b.when || 0) - (a.when || 0)).slice(0, 100);
+}
+
+async function writeChatHistoryToFirestore() {
+  if (__chatFromRemote) return;
+  const user = window.gymAuthUser;
+  const fb = window.gymFirebase;
+  if (!user || !fb) return;
+  try {
+    const ref = fb.doc(fb.db, "users", user.uid, "profile", CHAT_HISTORY_DOC);
+    await fb.setDoc(ref, { value: chatHistory, updatedAt: Date.now() }, { merge: true });
+  } catch (e) { console.warn("chat history sync failed:", e); }
+}
+
+async function writeChatCurrentToFirestore() {
+  if (__chatFromRemote) return;
+  const user = window.gymAuthUser;
+  const fb = window.gymFirebase;
+  if (!user || !fb) return;
+  try {
+    const ref = fb.doc(fb.db, "users", user.uid, "profile", CHAT_CURRENT_DOC);
+    await fb.setDoc(ref, { value: currentChat, updatedAt: Date.now() }, { merge: true });
+  } catch (e) { console.warn("current chat sync failed:", e); }
+}
+
+function scheduleChatHistorySync() {
+  if (__chatHistoryTimer) clearTimeout(__chatHistoryTimer);
+  __chatHistoryTimer = setTimeout(writeChatHistoryToFirestore, 400);
+}
+function scheduleChatCurrentSync() {
+  if (__chatCurrentTimer) clearTimeout(__chatCurrentTimer);
+  __chatCurrentTimer = setTimeout(writeChatCurrentToFirestore, 400);
+}
+
+function subscribeToChat(uid) {
+  if (__chatHistoryUnsub) { __chatHistoryUnsub(); __chatHistoryUnsub = null; }
+  if (__chatCurrentUnsub) { __chatCurrentUnsub(); __chatCurrentUnsub = null; }
+  const fb = window.gymFirebase;
+  if (!fb) return;
+
+  __chatHistoryUnsub = fb.onSnapshot(
+    fb.doc(fb.db, "users", uid, "profile", CHAT_HISTORY_DOC),
+    (snap) => {
+      if (!snap.exists()) return;
+      const remote = snap.data()?.value;
+      if (!Array.isArray(remote)) return;
+      // Remote is authoritative for live updates: ensures deletions on other devices propagate.
+      // We don't call persistChatHistory() because it would schedule a (no-op) sync back.
+      chatHistory = remote.slice();
+      try { localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chatHistory)); } catch {}
+      renderChatHistory();
+    },
+    (err) => console.warn("chat history listen error:", err)
+  );
+
+  __chatCurrentUnsub = fb.onSnapshot(
+    fb.doc(fb.db, "users", uid, "profile", CHAT_CURRENT_DOC),
+    (snap) => {
+      if (!snap.exists()) return;
+      const remote = snap.data()?.value;
+      if (!Array.isArray(remote)) return;
+      // Don't clobber an in-progress message the user is typing/composing on this device.
+      const popupOpen = document.getElementById("chatPopup")?.classList.contains("open");
+      const userTyping = document.activeElement?.id === "chatPopupInput"
+        && document.getElementById("chatPopupInput").value.trim().length > 0;
+      if (popupOpen && userTyping) return;
+      currentChat = remote.slice();
+      try { localStorage.setItem(CHAT_CURRENT_KEY, JSON.stringify(currentChat)); } catch {}
+      if (popupOpen) renderChatMessages();
+    },
+    (err) => console.warn("current chat listen error:", err)
+  );
+}
+
+async function initialChatSync(uid) {
+  const fb = window.gymFirebase;
+  if (!fb) return;
+  try {
+    const histRef = fb.doc(fb.db, "users", uid, "profile", CHAT_HISTORY_DOC);
+    const histSnap = await fb.getDoc(histRef);
+    const remoteHist = histSnap.exists() ? (histSnap.data()?.value || []) : [];
+    const merged = mergeChatHistory(chatHistory, remoteHist);
+    if (JSON.stringify(merged) !== JSON.stringify(chatHistory)) {
+      chatHistory = merged;
+      persistChatHistory();
+      renderChatHistory();
+      await writeChatHistoryToFirestore();
+    }
+
+    const curRef = fb.doc(fb.db, "users", uid, "profile", CHAT_CURRENT_DOC);
+    const curSnap = await fb.getDoc(curRef);
+    const remoteCur = curSnap.exists() ? (curSnap.data()?.value || []) : [];
+    // For current chat: if local is empty, adopt remote. If both have content, keep local
+    // (this device's in-progress chat takes priority over a stale remote).
+    if (!currentChat.length && remoteCur.length) {
+      currentChat = remoteCur.slice();
+      persistCurrentChat();
+    } else if (currentChat.length) {
+      await writeChatCurrentToFirestore();
+    }
+  } catch (e) { console.warn("initial chat sync failed:", e); }
+}
+
 async function initialProfileSync(uid) {
   // On first sign-in: pull remote, merge with local (local wins for non-empty fields), push back up.
   // This handles the case where the user filled in stats locally before sign-in.
@@ -5102,9 +5228,11 @@ function loadChat() {
 }
 function persistCurrentChat() {
   try { localStorage.setItem(CHAT_CURRENT_KEY, JSON.stringify(currentChat)); } catch {}
+  scheduleChatCurrentSync();
 }
 function persistChatHistory() {
   try { localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chatHistory)); } catch {}
+  scheduleChatHistorySync();
 }
 function archiveCurrentChat() {
   // Stash the active conversation into history so it shows up on the History page.
@@ -5352,14 +5480,18 @@ function setLoginVisible(visible) {
       await bootApp();
       // If the profile page is already up, re-render to show the new auth identity.
       if (state?.currentView === "profile") loadProfileIntoUI();
-      // Kick off profile sync: pull-merge-push, then subscribe to real-time updates.
+      // Kick off sync: pull-merge-push, then subscribe to real-time updates.
       try {
         await initialProfileSync(user.uid);
+        await initialChatSync(user.uid);
         subscribeToProfile(user.uid);
+        subscribeToChat(user.uid);
       } catch (e) { console.warn("sync bootstrap failed:", e); }
     } else {
       // Tear down listeners so the next user doesn't see the previous user's data.
       if (__profileUnsub) { __profileUnsub(); __profileUnsub = null; }
+      if (__chatHistoryUnsub) { __chatHistoryUnsub(); __chatHistoryUnsub = null; }
+      if (__chatCurrentUnsub) { __chatCurrentUnsub(); __chatCurrentUnsub = null; }
       setLoginVisible(true);
     }
   });
