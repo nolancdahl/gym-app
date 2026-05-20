@@ -2371,6 +2371,7 @@ body { padding-bottom: 74px; }
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
   import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDumiv3QAFL_n4xnKRdTyJ1Kjg5HKY5D-0",
@@ -2385,13 +2386,15 @@ body { padding-bottom: 74px; }
   const auth = getAuth(app);
   const provider = new GoogleAuthProvider();
   const db = getFirestore(app);
+  const storage = getStorage(app);
 
   window.gymFirebase = {
-    auth, provider, db,
+    auth, provider, db, storage,
     signIn: () => signInWithPopup(auth, provider),
     signOut: () => signOut(auth),
     onAuthStateChanged,
     doc, setDoc, getDoc, onSnapshot, serverTimestamp,
+    storageRef: ref, uploadBytes, getDownloadURL,
   };
   window.__resolveFirebase?.(window.gymFirebase);
 </script>
@@ -4874,6 +4877,114 @@ function bindGlobalEvents() {
   });
 }
 
+// === FIRESTORE SYNC LAYER ===
+// Profile lives at users/<uid>/profile/homebase_shared_profile_v1 so future apps can read the
+// same identity (name, photo, stats). We use Firestore's setDoc(..., {merge: true}) so each app
+// only touches the fields it knows about; unrelated keys are preserved.
+const SHARED_PROFILE_KEY = "homebase_shared_profile_v1";
+let __profileUnsub = null;
+let __profileWriteTimer = null;
+let __profileFromRemote = false;
+
+const dataUrlToBlob = (dataUrl) => {
+  const [meta, b64] = dataUrl.split(",");
+  const mime = (meta.match(/data:(.*?);base64/) || [])[1] || "image/jpeg";
+  const bytes = atob(b64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+};
+
+async function uploadPhotoToStorage(uid, dataUrl) {
+  const fb = window.gymFirebase;
+  if (!fb) return dataUrl;
+  const blob = dataUrlToBlob(dataUrl);
+  const filename = `profile_${Date.now()}.jpg`;
+  const sref = fb.storageRef(fb.storage, `users/${uid}/gym/${filename}`);
+  await fb.uploadBytes(sref, blob, { contentType: "image/jpeg" });
+  return await fb.getDownloadURL(sref);
+}
+
+async function sanitizeProfileForUpload(p, uid) {
+  const out = { ...p };
+  if (out.photo && typeof out.photo === "string" && out.photo.startsWith("data:image/")) {
+    try { out.photo = await uploadPhotoToStorage(uid, out.photo); }
+    catch (e) { console.warn("photo upload failed, keeping data URL:", e); }
+  }
+  return out;
+}
+
+async function writeProfileToFirestore(p) {
+  if (__profileFromRemote) return;
+  const user = window.gymAuthUser;
+  const fb = window.gymFirebase;
+  if (!user || !fb) return;
+  try {
+    const sanitized = await sanitizeProfileForUpload(p, user.uid);
+    // If photo got converted to a Storage URL, update local cache too so we don't re-upload next time.
+    if (sanitized.photo !== p.photo) {
+      saveProfile(sanitized);
+      if (state?.currentView === "profile") loadProfileIntoUI();
+    }
+    const ref = fb.doc(fb.db, "users", user.uid, "profile", SHARED_PROFILE_KEY);
+    await fb.setDoc(ref, { value: sanitized, updatedAt: Date.now() }, { merge: true });
+  } catch (e) {
+    console.warn("profile sync failed:", e);
+  }
+}
+
+function scheduleProfileSync() {
+  if (__profileWriteTimer) clearTimeout(__profileWriteTimer);
+  __profileWriteTimer = setTimeout(() => writeProfileToFirestore(loadProfile()), 400);
+}
+
+function subscribeToProfile(uid) {
+  if (__profileUnsub) { __profileUnsub(); __profileUnsub = null; }
+  const fb = window.gymFirebase;
+  if (!fb) return;
+  const ref = fb.doc(fb.db, "users", uid, "profile", SHARED_PROFILE_KEY);
+  __profileUnsub = fb.onSnapshot(ref, (snap) => {
+    if (!snap.exists()) return;
+    const remote = snap.data()?.value;
+    if (!remote || typeof remote !== "object") return;
+    __profileFromRemote = true;
+    try {
+      const local = loadProfile();
+      // Remote wins on conflict — that's the cross-device promise. Local-only fields are kept.
+      const merged = { ...local, ...remote };
+      saveProfile(merged);
+      if (state?.currentView === "profile") loadProfileIntoUI();
+    } finally {
+      __profileFromRemote = false;
+    }
+  }, (err) => console.warn("profile listen error:", err));
+}
+
+async function initialProfileSync(uid) {
+  // On first sign-in: pull remote, merge with local (local wins for non-empty fields), push back up.
+  // This handles the case where the user filled in stats locally before sign-in.
+  const fb = window.gymFirebase;
+  if (!fb) return;
+  try {
+    const ref = fb.doc(fb.db, "users", uid, "profile", SHARED_PROFILE_KEY);
+    const snap = await fb.getDoc(ref);
+    const remote = snap.exists() ? (snap.data()?.value || {}) : {};
+    const local = loadProfile();
+    const merged = { ...remote };
+    for (const [k, v] of Object.entries(local)) {
+      if (v !== "" && v !== undefined && v !== null) merged[k] = v;
+      else if (merged[k] === undefined) merged[k] = v;
+    }
+    if (Object.keys(merged).length) {
+      saveProfile(merged);
+      if (state?.currentView === "profile") loadProfileIntoUI();
+      await writeProfileToFirestore(merged);
+    }
+  } catch (e) {
+    console.warn("initial profile sync failed:", e);
+  }
+}
+
 // === PROFILE ===
 const PROFILE_KEY = "gym_profile_v1";
 function loadProfile() {
@@ -4924,6 +5035,7 @@ function bindProfileEvents() {
       p.photo = reader.result;
       saveProfile(p);
       loadProfileIntoUI();
+      scheduleProfileSync();
     };
     reader.readAsDataURL(file);
     photoInput.value = "";
@@ -4944,6 +5056,7 @@ function bindProfileEvents() {
       const p = loadProfile();
       p[key] = el.value;
       saveProfile(p);
+      scheduleProfileSync();
     });
   }
   document.getElementById("profileExportBtn").addEventListener("click", exportData);
@@ -5232,14 +5345,21 @@ function setLoginVisible(visible) {
     }
   });
 
-  fb.onAuthStateChanged(fb.auth, (user) => {
+  fb.onAuthStateChanged(fb.auth, async (user) => {
     window.gymAuthUser = user || null;
     if (user) {
       setLoginVisible(false);
-      bootApp();
+      await bootApp();
       // If the profile page is already up, re-render to show the new auth identity.
       if (state?.currentView === "profile") loadProfileIntoUI();
+      // Kick off profile sync: pull-merge-push, then subscribe to real-time updates.
+      try {
+        await initialProfileSync(user.uid);
+        subscribeToProfile(user.uid);
+      } catch (e) { console.warn("sync bootstrap failed:", e); }
     } else {
+      // Tear down listeners so the next user doesn't see the previous user's data.
+      if (__profileUnsub) { __profileUnsub(); __profileUnsub = null; }
       setLoginVisible(true);
     }
   });
