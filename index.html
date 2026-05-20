@@ -28,6 +28,9 @@
   --red-dot: #c8504e;
   --save-clean: #1a1a1a;
   --highlight-white: #ffffff;
+  /* Easing curves — match Material's "decelerate" and a softer "smooth" for bigger transitions */
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-soft:   cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * {
@@ -127,6 +130,7 @@ body {
 }
 .hero img {
   width: 100%;
+  max-width: none;
   height: auto;
   display: block;
   filter: contrast(1.05) brightness(0.9);
@@ -175,7 +179,7 @@ body {
   letter-spacing: 0.04em;
   white-space: nowrap;
   transform: translateX(-50%);
-  transition: left 400ms ease;
+  transition: left 520ms var(--ease-smooth);
   /* Anchor sits centered above the current fill edge */
 }
 .overall-progress-bar {
@@ -193,7 +197,7 @@ body {
   background: var(--green);
   /* Squared left edge, rounded right edge */
   border-radius: 0 4px 4px 0;
-  transition: width 400ms ease;
+  transition: width 520ms var(--ease-smooth);
   min-width: 0;
 }
 .overall-progress-fill.empty {
@@ -233,7 +237,7 @@ body {
   font-weight: 600;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 120ms ease;
+  transition: background 220ms var(--ease-soft), border-color 220ms var(--ease-soft), color 220ms var(--ease-soft);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   text-align: center;
@@ -254,7 +258,7 @@ body {
   font-weight: 600;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 120ms ease;
+  transition: background 220ms var(--ease-soft), border-color 220ms var(--ease-soft), color 220ms var(--ease-soft);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   text-align: center;
@@ -345,18 +349,21 @@ body {
   background: var(--bg-page);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: all 200ms ease;
+  transition: background 280ms var(--ease-smooth), border-color 280ms var(--ease-smooth), transform 280ms var(--ease-smooth);
   padding: 0;
   margin-top: 4px;
 }
+.title-complete-toggle:active { transform: scale(0.92); }
 .title-complete-toggle:hover { border-color: var(--highlight-white); }
 .title-complete-toggle.checked { background: var(--green); border-color: var(--green); }
 .title-complete-toggle svg {
   width: 18px; height: 18px;
   stroke: #000; stroke-width: 3;
   fill: none; stroke-linecap: round; stroke-linejoin: round;
-  opacity: 0; transition: opacity 200ms;
+  opacity: 0; transition: opacity 280ms var(--ease-smooth), transform 280ms var(--ease-smooth);
+  transform: scale(0.6);
 }
+.title-complete-toggle.checked svg { transform: scale(1); }
 .title-complete-toggle.checked svg { opacity: 1; }
 
 /* === PHASE — title + window grouped on left, + button on right === */
@@ -1716,9 +1723,693 @@ body {
 /* prevent text selection while dragging */
 body.is-dragging { user-select: none; -webkit-user-select: none; }
 body.is-dragging * { cursor: grabbing !important; }
+
+/* === LOGIN OVERLAY === */
+.login-overlay {
+  position: fixed; inset: 0;
+  background: var(--bg-page);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 320ms var(--ease-smooth) both;
+}
+.login-overlay.hidden { display: none; }
+.login-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  max-width: 360px;
+  text-align: center;
+}
+.login-brand {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 38px;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  line-height: 1;
+}
+.login-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  line-height: 1.55;
+  font-weight: 500;
+  padding: 0 8px;
+}
+.login-google-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 22px;
+  margin-top: 8px;
+  background: var(--green);
+  color: #000;
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(95, 212, 160, 0.32);
+  transition: transform 280ms var(--ease-smooth), box-shadow 280ms var(--ease-smooth);
+}
+.login-google-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(95, 212, 160, 0.45); }
+.login-google-btn svg path { fill: #000; }
+.login-error {
+  min-height: 18px;
+  font-size: 11px;
+  color: var(--red-dot);
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+/* === BOTTOM NAV === */
+body { padding-bottom: 74px; }
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(22, 22, 22, 0.94);
+  border-top: 1px solid var(--border-emphasis);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 8px 4px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+}
+.bottom-nav-inner {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  max-width: 640px;
+  margin: 0 auto;
+}
+.nav-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 2px;
+  color: var(--text-faint);
+  transition: color 260ms var(--ease-smooth), transform 260ms var(--ease-smooth);
+}
+.nav-tab:active { transform: scale(0.92); }
+.nav-tab svg {
+  width: 24px; height: 24px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke-width 260ms var(--ease-smooth);
+}
+.nav-tab.active { color: var(--green); }
+.nav-tab.active svg { stroke-width: 2; }
+.nav-tab:hover { color: var(--text-secondary); }
+.nav-tab.active:hover { color: var(--green); }
+
+/* === FLOATING CHAT BUTTON === */
+.fab-chat {
+  position: fixed;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  right: 18px;
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #000;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(95, 212, 160, 0.32);
+  z-index: 102;
+  transition: transform 320ms var(--ease-smooth), box-shadow 320ms var(--ease-smooth);
+  position: fixed;
+}
+.fab-chat:hover { transform: scale(1.06); box-shadow: 0 10px 28px rgba(95, 212, 160, 0.45); }
+.fab-chat.active { transform: scale(1.05); }
+.fab-chat .fab-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 360ms var(--ease-smooth), transform 360ms var(--ease-smooth);
+}
+.fab-chat .fab-icon-close {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.55);
+}
+.fab-chat.active .fab-icon-bicep {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.55);
+}
+.fab-chat.active .fab-icon-close {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+.fab-chat svg {
+  width: 24px; height: 24px;
+  stroke: #000; fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.fab-chat .fab-icon-close svg { width: 20px; height: 20px; stroke-width: 2.2; }
+
+/* === CHAT POPUP === */
+.chat-popup-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 200;
+  display: none;
+  animation: fadeIn 180ms ease both;
+}
+.chat-popup-backdrop.open { display: block; }
+.chat-popup {
+  position: fixed;
+  bottom: calc(168px + env(safe-area-inset-bottom, 0px));
+  right: 18px;
+  width: min(665px, calc(100vw - 24px));
+  max-height: min(820px, calc(100vh - 200px));
+  background: rgba(22, 22, 22, 0.96);
+  border: 1px solid var(--border-emphasis);
+  border-radius: 22px;
+  z-index: 201;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.7);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: chatIn 360ms var(--ease-smooth) both;
+}
+.chat-popup.open { display: flex; }
+@keyframes chatIn {
+  from { opacity: 0; transform: translateY(28px) scale(0.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.chat-msg { animation: msgIn 280ms var(--ease-smooth) both; }
+.chat-popup-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.chat-popup-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  line-height: 1;
+}
+.chat-popup-sub {
+  font-size: 9px; font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.chat-popup-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.chat-popup-icon-btn {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: transparent; border: 1px solid var(--border-emphasis);
+  color: var(--text-secondary); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0;
+  transition: border-color 240ms var(--ease-smooth), color 240ms var(--ease-smooth), transform 240ms var(--ease-smooth);
+}
+.chat-popup-icon-btn:hover { border-color: var(--text-primary); color: var(--text-primary); }
+.chat-popup-icon-btn:active { transform: scale(0.9); }
+.chat-popup-icon-btn svg { width: 14px; height: 14px; }
+#chatPopupNew svg { width: 16px; height: 16px; }
+#chatPopupNew:hover { border-color: var(--green); color: var(--green); }
+.chat-popup-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.chat-empty-state {
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 13px;
+  font-style: italic;
+  padding: 8px 4px 4px;
+  line-height: 1.55;
+}
+.chat-empty-text {
+  margin-bottom: 18px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.chat-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.chat-prompt-chip {
+  padding: 9px 14px;
+  background: transparent;
+  border: 1px solid var(--border-emphasis);
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 240ms var(--ease-smooth), color 240ms var(--ease-smooth), transform 240ms var(--ease-smooth);
+  line-height: 1.3;
+  font-style: normal;
+}
+.chat-prompt-chip:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+.chat-prompt-chip:active { transform: scale(0.96); }
+.chat-msg {
+  max-width: 85%;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.chat-msg.user {
+  align-self: flex-end;
+  background: var(--green);
+  color: #000;
+  border-radius: 14px 14px 4px 14px;
+  font-weight: 600;
+}
+.chat-msg.bot {
+  align-self: flex-start;
+  background: #1a1a1a;
+  color: var(--text-primary);
+  border-radius: 14px 14px 14px 4px;
+  border: 1px solid var(--border-subtle);
+}
+.chat-msg.bot.thinking {
+  color: var(--text-faint);
+  font-style: italic;
+}
+.chat-popup-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border-subtle);
+  background: rgba(22, 22, 22, 0.96);
+}
+.chat-popup-input {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bg-page);
+  border: 1px solid var(--border-emphasis);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+}
+.chat-popup-input:focus { border-color: var(--green); }
+.chat-popup-send {
+  width: 42px; height: 42px;
+  flex-shrink: 0;
+  padding: 0;
+  background: var(--green);
+  color: #000;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 180ms ease, opacity 180ms ease, box-shadow 180ms ease;
+  box-shadow: 0 4px 14px rgba(95, 212, 160, 0.28);
+}
+.chat-popup-send:hover:not(:disabled) {
+  transform: scale(1.06);
+  box-shadow: 0 6px 20px rgba(95, 212, 160, 0.42);
+}
+.chat-popup-send:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+.chat-popup-send svg {
+  width: 18px; height: 18px;
+  stroke: #000;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform: translate(-1px, 1px);
+}
+
+/* === PROFILE PAGE === */
+.profile-page {
+  max-width: 720px;
+  margin: 36px auto 0;
+  padding: 0 24px;
+}
+@media (max-width: 720px) { .profile-page { margin-top: 24px; padding: 0 16px; } }
+.profile-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 28px;
+}
+.profile-photo {
+  width: 160px; height: 160px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--bg-elevated);
+  border: 2px solid var(--border-emphasis);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  margin-bottom: 14px;
+  position: relative;
+  transition: border-color 320ms var(--ease-smooth), transform 320ms var(--ease-smooth);
+}
+.profile-photo:active { transform: scale(0.98); }
+.profile-photo:hover { border-color: var(--green); }
+.profile-photo img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.profile-photo .placeholder {
+  color: var(--text-faint);
+  font-size: 38px;
+  font-weight: 300;
+}
+.profile-photo .photo-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  transition: opacity 280ms var(--ease-smooth);
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: #fff;
+}
+.profile-photo:hover .photo-overlay { opacity: 1; }
+.profile-name-input {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 28px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-align: center;
+  outline: none;
+  padding: 4px 8px;
+  border-bottom: 1px solid transparent;
+  transition: border-color 180ms ease;
+  width: 280px;
+  max-width: 100%;
+}
+.profile-name-input {
+  transition: border-color 280ms var(--ease-smooth);
+}
+.profile-name-input:focus,
+.profile-name-input:hover { border-bottom-color: var(--border-divider); }
+.profile-email {
+  font-size: 11px; font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.14em; text-transform: uppercase;
+  margin-top: 4px;
+}
+.profile-signout-btn {
+  margin-top: 10px;
+  padding: 6px 16px;
+  background: transparent;
+  border: 1px solid var(--border-emphasis);
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 180ms ease, border-color 180ms ease;
+}
+.profile-signout-btn:hover { color: var(--text-primary); border-color: var(--text-primary); }
+.profile-section {
+  margin-bottom: 32px;
+}
+.profile-section-title {
+  font-size: 10px; font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+.profile-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.profile-row:last-child { border-bottom: none; }
+.profile-row-label {
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.profile-row input {
+  text-align: right;
+  background: transparent;
+  border: none;
+  color: var(--green);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  outline: none;
+  width: 140px;
+  max-width: 50%;
+}
+.profile-row input::placeholder { color: var(--text-faint); font-weight: 500; }
+.profile-textarea {
+  width: 100%;
+  min-height: 110px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 14px 16px;
+  outline: none;
+  resize: vertical;
+  transition: border-color 180ms ease;
+}
+.profile-textarea:focus { border-color: var(--green); }
+.profile-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+.profile-action-btn {
+  flex: 1;
+  min-width: 140px;
+  padding: 12px 16px;
+  background: transparent;
+  border: 1px solid var(--border-emphasis);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 280ms var(--ease-smooth), color 280ms var(--ease-smooth), transform 280ms var(--ease-smooth);
+}
+.profile-action-btn:active { transform: scale(0.97); }
+.profile-action-btn:hover { border-color: var(--green); color: var(--green); }
+.profile-action-btn.danger:hover { border-color: var(--red-dot); color: var(--red-dot); }
+
+/* === CHAT HISTORY PAGE === */
+.chat-history-page {
+  max-width: 720px;
+  margin: 36px auto 0;
+  padding: 0 24px;
+}
+@media (max-width: 720px) { .chat-history-page { margin-top: 24px; padding: 0 16px; } }
+.chat-history-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.chat-history-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 42px;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  line-height: 0.92;
+}
+.chat-history-sub {
+  font-size: 11px; font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.18em; text-transform: uppercase;
+  margin-top: 8px;
+}
+.chat-history-search {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  margin-bottom: 14px;
+}
+.chat-history-search:focus { border-color: var(--green); }
+.chat-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chat-history-item {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 280ms var(--ease-smooth), background 280ms var(--ease-smooth), transform 280ms var(--ease-smooth);
+  text-align: left;
+  color: var(--text-primary);
+  font-family: inherit;
+  position: relative;
+}
+.chat-history-item:active { transform: scale(0.99); }
+.chat-history-item:hover { border-color: var(--border-emphasis); background: #111; }
+.chat-history-preview {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 28px;
+}
+.chat-history-meta {
+  font-size: 10px;
+  color: var(--text-faint);
+  margin-top: 4px;
+  letter-spacing: 0.08em;
+}
+.chat-history-delete {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-faint);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+}
+.chat-history-delete:hover { border-color: var(--red-dot); color: var(--red-dot); }
+.chat-history-empty {
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 12px;
+  font-style: italic;
+  padding: 40px 16px;
+}
+
+/* Hide the old top L/P toggle — bottom nav replaces it */
+.top-corner-row { display: none; }
 </style>
 </head>
 <body>
+
+<!-- Firebase init (CDN ESM modules — same garmint-37d10 project as mint/homebase).
+     This sets window.gymFirebase + resolves window.firebaseReady so the legacy
+     inline script can wait on it before booting. The web API key is safe to
+     embed; access is controlled by Firestore rules + Auth domain whitelist. -->
+<script>window.firebaseReady = new Promise((r) => { window.__resolveFirebase = r; });</script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDumiv3QAFL_n4xnKRdTyJ1Kjg5HKY5D-0",
+    authDomain: "garmint-37d10.firebaseapp.com",
+    projectId: "garmint-37d10",
+    storageBucket: "garmint-37d10.firebasestorage.app",
+    messagingSenderId: "380211467933",
+    appId: "1:380211467933:web:5bd7f7594307194049a674",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+  const db = getFirestore(app);
+
+  window.gymFirebase = {
+    auth, provider, db,
+    signIn: () => signInWithPopup(auth, provider),
+    signOut: () => signOut(auth),
+    onAuthStateChanged,
+    doc, setDoc, getDoc, onSnapshot, serverTimestamp,
+  };
+  window.__resolveFirebase?.(window.gymFirebase);
+</script>
+
+<!-- Login screen — shown until Firebase auth resolves a user. -->
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-card">
+    <div class="login-brand">NOLÁN'S GYM</div>
+    <div class="login-sub">Sign in to sync workouts, profile, and Arnold across devices.</div>
+    <button id="loginGoogleBtn" class="login-google-btn">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path fill="#fff" d="M21.35 11.1H12v2.92h5.35c-.23 1.51-1.62 4.42-5.35 4.42-3.22 0-5.85-2.66-5.85-5.95s2.63-5.95 5.85-5.95c1.83 0 3.06.78 3.76 1.45l2.57-2.48C16.83 3.97 14.65 3 12 3 6.97 3 3 6.97 3 12s3.97 9 9 9c5.2 0 8.65-3.65 8.65-8.8 0-.59-.06-1.04-.3-1.1z"/>
+      </svg>
+      <span>Sign in with Google</span>
+    </button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
 
 <div class="top-corner-row">
   <div class="view-toggle" data-active="log" id="viewToggle">
@@ -1821,6 +2512,134 @@ body.is-dragging * { cursor: grabbing !important; }
     </section>
   </div>
 </div>
+
+<div id="profileView" style="display:none">
+  <div class="profile-page">
+    <div class="profile-hero">
+      <label for="profilePhotoInput" class="profile-photo" id="profilePhotoTarget" title="Change photo">
+        <span class="placeholder" id="profilePhotoPlaceholder">+</span>
+        <img id="profilePhotoImg" alt="" style="display:none">
+        <span class="photo-overlay">Change</span>
+      </label>
+      <input type="file" id="profilePhotoInput" accept="image/*" style="display:none">
+      <input type="text" class="profile-name-input" id="profileNameInput" placeholder="Your name" maxlength="40">
+      <div class="profile-email" id="profileEmail"></div>
+      <button class="profile-signout-btn" id="profileSignOutBtn">Sign out</button>
+    </div>
+
+    <div class="profile-section">
+      <div class="profile-section-title">Goals &amp; focus</div>
+      <textarea class="profile-textarea" id="profileGoals" placeholder="What you're training for, current focus, things you want Coach to keep in mind..."></textarea>
+    </div>
+
+    <div class="profile-section">
+      <div class="profile-section-title">Stats</div>
+      <div class="profile-card">
+        <div class="profile-row">
+          <span class="profile-row-label">Height</span>
+          <input type="text" id="profileHeight" placeholder="—">
+        </div>
+        <div class="profile-row">
+          <span class="profile-row-label">Weight</span>
+          <input type="text" id="profileWeight" placeholder="—">
+        </div>
+        <div class="profile-row">
+          <span class="profile-row-label">Age</span>
+          <input type="text" id="profileAge" placeholder="—">
+        </div>
+        <div class="profile-row">
+          <span class="profile-row-label">Resting HR</span>
+          <input type="text" id="profileRhr" placeholder="—">
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-section">
+      <div class="profile-section-title">Injuries &amp; notes</div>
+      <textarea class="profile-textarea" id="profileInjuries" placeholder="Existing injuries, movement limits, anything Coach should avoid programming..."></textarea>
+    </div>
+
+    <div class="profile-section">
+      <div class="profile-section-title">Data</div>
+      <div class="profile-actions">
+        <button class="profile-action-btn" id="profileExportBtn">Export data</button>
+        <label class="profile-action-btn" for="profileImportInput">Import data</label>
+        <input type="file" id="profileImportInput" accept=".json,application/json" style="display:none">
+        <button class="profile-action-btn danger" id="profileClearChatBtn">Clear chat history</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="chatHistoryView" style="display:none">
+  <div class="chat-history-page">
+    <div class="chat-history-header">
+      <div class="chat-history-title">Chat History</div>
+      <div class="chat-history-sub">Past conversations with Coach</div>
+    </div>
+    <input type="text" class="chat-history-search" id="chatHistorySearch" placeholder="Search past chats...">
+    <div class="chat-history-list" id="chatHistoryList"></div>
+  </div>
+</div>
+
+<!-- Floating chat button + popup -->
+<button class="fab-chat" id="fabChat" aria-label="Ask Arnold">
+  <span class="fab-icon fab-icon-bicep">
+    <svg viewBox="0 0 24 24"><path d="M12.409 13.017A5 5 0 0 1 22 15c0 3.866-4 7-9 7-4.077 0-8.153-.82-10.371-2.462-.426-.316-.631-.832-.62-1.362C2.118 12.723 2.627 2 10 2a3 3 0 0 1 3 3 2 2 0 0 1-2 2c-1.105 0-1.64-.444-2-1"/><path d="M15 14a5 5 0 0 0-7.584 2"/><path d="M9.964 6.825C8.019 7.977 9.5 13 8 15"/></svg>
+  </span>
+  <span class="fab-icon fab-icon-close">
+    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </span>
+</button>
+<div class="chat-popup-backdrop" id="chatPopupBackdrop"></div>
+<div class="chat-popup" id="chatPopup" role="dialog" aria-label="Ask Arnold">
+  <div class="chat-popup-header">
+    <div>
+      <div class="chat-popup-title">Ask Arnold</div>
+      <div class="chat-popup-sub">Lifts, form, programming, recovery</div>
+    </div>
+    <div class="chat-popup-actions">
+      <button class="chat-popup-icon-btn" id="chatPopupNew" aria-label="New chat" title="Start a new chat — archives the current one">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10"/>
+          <path d="M3.51 15a9 9 0 0 0 14.85 3.36L23 14"/>
+          <polyline points="1 4 1 10 7 10"/>
+          <polyline points="23 20 23 14 17 14"/>
+          <line x1="12" y1="10" x2="12" y2="14"/>
+          <line x1="10" y1="12" x2="14" y2="12"/>
+        </svg>
+      </button>
+      <button class="chat-popup-icon-btn" id="chatPopupClose" aria-label="Close chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="chat-popup-body" id="chatPopupBody"></div>
+  <div class="chat-popup-input-row">
+    <input type="text" class="chat-popup-input" id="chatPopupInput" placeholder="Ask Arnold anything...">
+    <button class="chat-popup-send" id="chatPopupSend" aria-label="Send">
+      <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<nav class="bottom-nav" id="bottomNav">
+  <div class="bottom-nav-inner">
+    <button class="nav-tab active" data-view="home" aria-label="Home">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4a1 1 0 0 1-1-1v-6h-4v6a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2z"/></svg>
+    </button>
+    <button class="nav-tab" data-view="analytics" aria-label="Analytics">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    </button>
+    <button class="nav-tab" data-view="chathistory" aria-label="Chat history">
+      <svg viewBox="0 0 24 24" style="transform: scaleX(-1);"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </button>
+    <button class="nav-tab" data-view="profile" aria-label="Profile">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </button>
+  </div>
+</nav>
 
 <!-- Exercise picker modal -->
 <div class="modal-backdrop" id="exerciseModal">
@@ -1936,7 +2755,7 @@ const STORAGE_KEY = "nolans-gym-v55";
 const FALLBACK_KEYS = ["nolans-gym-v25","nolans-gym-v18","nolans-gym-v17","nolans-gym-v16","nolans-gym-v15","nolans-gym-v14","nolans-gym-v13","nolans-gym-v12","nolans-gym-v11","nolans-gym-v10","nolans-gym-v9","nolans-gym-v8","nolans-gym-v7","nolans-gym-v6","nolans-gym-v5","nolans-gym-v4","nolans-gym-v3","nolans-gym-v2","nolans-gym-v1"];
 
 let state = {
-  currentView: "log",
+  currentView: "home",
   currentWeek: 1,
   currentDay: "Lower 1",
   logs: {},
@@ -3629,12 +4448,20 @@ function render() {
 
 // === PROGRESS VIEW ===
 function switchView(viewName) {
+  // Backwards-compat: "log" and "progress" used to be the two view IDs before the bottom nav existed.
+  // Old persisted state may still contain them; map them to the new names.
+  if (viewName === "log") viewName = "home";
+  else if (viewName === "progress") viewName = "analytics";
+
   state.currentView = viewName;
-  document.getElementById("viewToggle").setAttribute("data-active", viewName);
-  document.querySelectorAll(".view-tab").forEach(b => b.classList.toggle("active", b.dataset.view === viewName));
-  document.getElementById("logView").style.display = viewName === "log" ? "" : "none";
-  document.getElementById("progressView").style.display = viewName === "progress" ? "" : "none";
-  if (viewName === "progress") renderProgressView();
+  document.querySelectorAll(".nav-tab").forEach(b => b.classList.toggle("active", b.dataset.view === viewName));
+  document.getElementById("logView").style.display = viewName === "home" ? "" : "none";
+  document.getElementById("progressView").style.display = viewName === "analytics" ? "" : "none";
+  document.getElementById("chatHistoryView").style.display = viewName === "chathistory" ? "" : "none";
+  document.getElementById("profileView").style.display = viewName === "profile" ? "" : "none";
+  if (viewName === "analytics") renderProgressView();
+  if (viewName === "chathistory") renderChatHistory();
+  if (viewName === "profile") loadProfileIntoUI();
 }
 
 function populateExerciseSelector() {
@@ -3990,7 +4817,7 @@ async function importData(file) {
     state.dirty = true;
     await saveState(true);
     render();
-    if (state.currentView === 'progress') renderProgressView();
+    if (state.currentView === 'analytics') renderProgressView();
     alert('Import complete.');
   } catch (err) {
     alert('Import failed: ' + err.message);
@@ -3998,15 +4825,13 @@ async function importData(file) {
 }
 
 function bindGlobalEvents() {
-  // The whole toggle pill flips on click — tap either side, it goes to the other state
-  const toggleEl = document.getElementById("viewToggle");
-  if (toggleEl) {
-    toggleEl.addEventListener("click", () => {
-      const next = state.currentView === "log" ? "progress" : "log";
-      switchView(next);
-    });
-  }
-  
+  // Bottom nav — each tab swaps the active view
+  document.querySelectorAll(".nav-tab").forEach((btn) => {
+    btn.addEventListener("click", () => switchView(btn.dataset.view));
+  });
+  bindChatEvents();
+  bindProfileEvents();
+
   const exportBtn = document.getElementById("exportDataBtn");
   if (exportBtn) exportBtn.addEventListener("click", exportData);
   const importInput = document.getElementById("importDataInput");
@@ -4043,24 +4868,381 @@ function bindGlobalEvents() {
   
   let resizeTimer;
   window.addEventListener("resize", () => {
-    if (state.currentView !== "progress") return;
+    if (state.currentView !== "analytics") return;
     if (resizeTimer) clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => { drawWeightChart(); drawSymptomChart(); drawHrChart(); }, 150);
   });
+}
+
+// === PROFILE ===
+const PROFILE_KEY = "gym_profile_v1";
+function loadProfile() {
+  try {
+    const raw = localStorage.getItem(PROFILE_KEY);
+    if (!raw) return {};
+    const obj = JSON.parse(raw);
+    return obj && typeof obj === "object" ? obj : {};
+  } catch { return {}; }
+}
+function saveProfile(p) {
+  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); } catch {}
+}
+function loadProfileIntoUI() {
+  const p = loadProfile();
+  const img = document.getElementById("profilePhotoImg");
+  const placeholder = document.getElementById("profilePhotoPlaceholder");
+  // Prefer user-uploaded photo, fall back to Google auth photo so the avatar isn't empty post-signin.
+  const photoSrc = p.photo || (window.gymAuthUser && window.gymAuthUser.photoURL) || null;
+  if (photoSrc) {
+    img.src = photoSrc; img.style.display = "block";
+    placeholder.style.display = "none";
+  } else {
+    img.style.display = "none";
+    img.removeAttribute("src");
+    placeholder.style.display = "block";
+  }
+  // Default name from Google profile if user hasn't set one yet.
+  document.getElementById("profileNameInput").value = p.name || (window.gymAuthUser?.displayName || "");
+  document.getElementById("profileGoals").value = p.goals || "";
+  document.getElementById("profileInjuries").value = p.injuries || "";
+  document.getElementById("profileHeight").value = p.height || "";
+  document.getElementById("profileWeight").value = p.weight || "";
+  document.getElementById("profileAge").value = p.age || "";
+  document.getElementById("profileRhr").value = p.rhr || "";
+  // Email comes straight from auth (read-only).
+  const emailEl = document.getElementById("profileEmail");
+  if (emailEl) emailEl.textContent = window.gymAuthUser?.email || "Not signed in";
+}
+function bindProfileEvents() {
+  const photoInput = document.getElementById("profilePhotoInput");
+  photoInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const p = loadProfile();
+      p.photo = reader.result;
+      saveProfile(p);
+      loadProfileIntoUI();
+    };
+    reader.readAsDataURL(file);
+    photoInput.value = "";
+  });
+  const fields = [
+    ["profileNameInput", "name"],
+    ["profileGoals", "goals"],
+    ["profileInjuries", "injuries"],
+    ["profileHeight", "height"],
+    ["profileWeight", "weight"],
+    ["profileAge", "age"],
+    ["profileRhr", "rhr"],
+  ];
+  for (const [id, key] of fields) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    el.addEventListener("input", () => {
+      const p = loadProfile();
+      p[key] = el.value;
+      saveProfile(p);
+    });
+  }
+  document.getElementById("profileExportBtn").addEventListener("click", exportData);
+  document.getElementById("profileImportInput").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) importData(file);
+    e.target.value = "";
+  });
+  document.getElementById("profileSignOutBtn").addEventListener("click", async () => {
+    try {
+      const fb = await window.firebaseReady;
+      await fb.signOut();
+    } catch (e) {
+      alert("Sign-out failed: " + (e?.message || e));
+    }
+  });
+  document.getElementById("profileClearChatBtn").addEventListener("click", () => {
+    if (!confirm("Clear all chat history? This cannot be undone.")) return;
+    try { localStorage.removeItem(CHAT_HISTORY_KEY); } catch {}
+    chatHistory = [];
+    currentChat = [];
+    renderChatHistory();
+    renderChatMessages();
+  });
+}
+
+// === CHAT ===
+const CHAT_HISTORY_KEY = "gym_chat_history_v1";
+const CHAT_CURRENT_KEY = "gym_chat_current_v1";
+let chatHistory = [];
+let currentChat = [];
+let chatSending = false;
+
+function loadChat() {
+  try {
+    const h = JSON.parse(localStorage.getItem(CHAT_HISTORY_KEY) || "[]");
+    if (Array.isArray(h)) chatHistory = h;
+  } catch {}
+  try {
+    const c = JSON.parse(localStorage.getItem(CHAT_CURRENT_KEY) || "[]");
+    if (Array.isArray(c)) currentChat = c;
+  } catch {}
+}
+function persistCurrentChat() {
+  try { localStorage.setItem(CHAT_CURRENT_KEY, JSON.stringify(currentChat)); } catch {}
+}
+function persistChatHistory() {
+  try { localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chatHistory)); } catch {}
+}
+function archiveCurrentChat() {
+  // Stash the active conversation into history so it shows up on the History page.
+  if (!currentChat.length) return;
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  chatHistory = [{ id, when: Date.now(), messages: currentChat.slice() }, ...chatHistory].slice(0, 100);
+  currentChat = [];
+  persistCurrentChat();
+  persistChatHistory();
+}
+const ARNOLD_PROMPTS = [
+  "Critique my squat form",
+  "Best accessory lifts for bench?",
+  "How should I deload this week?",
+  "Suggest a push day finisher",
+  "What's a realistic deadlift goal for me?",
+];
+function renderChatMessages() {
+  const body = document.getElementById("chatPopupBody");
+  if (!body) return;
+  body.innerHTML = "";
+  if (!currentChat.length) {
+    const empty = document.createElement("div");
+    empty.className = "chat-empty-state";
+    const text = document.createElement("div");
+    text.className = "chat-empty-text";
+    text.textContent = "Ask Arnold anything — programming, form, recovery, supplements.";
+    empty.appendChild(text);
+    const promptsEl = document.createElement("div");
+    promptsEl.className = "chat-prompts";
+    for (const p of ARNOLD_PROMPTS) {
+      const chip = document.createElement("button");
+      chip.className = "chat-prompt-chip";
+      chip.textContent = p;
+      chip.addEventListener("click", () => {
+        document.getElementById("chatPopupInput").value = p;
+        sendChatMessage();
+      });
+      promptsEl.appendChild(chip);
+    }
+    empty.appendChild(promptsEl);
+    body.appendChild(empty);
+    return;
+  }
+  for (const m of currentChat) {
+    const el = document.createElement("div");
+    el.className = `chat-msg ${m.role === "user" ? "user" : "bot"}`;
+    el.textContent = m.text;
+    body.appendChild(el);
+  }
+  if (chatSending) {
+    const t = document.createElement("div");
+    t.className = "chat-msg bot thinking";
+    t.textContent = "Coach is thinking…";
+    body.appendChild(t);
+  }
+  body.scrollTop = body.scrollHeight;
+}
+async function sendChatMessage() {
+  if (chatSending) return;
+  const inputEl = document.getElementById("chatPopupInput");
+  const text = inputEl.value.trim();
+  if (!text) return;
+  inputEl.value = "";
+  currentChat.push({ role: "user", text });
+  persistCurrentChat();
+  chatSending = true;
+  renderChatMessages();
+  try {
+    const res = await fetch("/.netlify/functions/coach-chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: currentChat.map((m) => ({ role: m.role, text: m.text })),
+        userContext: { profile: loadProfile() },
+      }),
+    });
+    let data = {};
+    try { data = await res.json(); } catch {}
+    if (!res.ok || !data.text) throw new Error(data.error || `Coach offline (HTTP ${res.status})`);
+    currentChat.push({ role: "coach", text: data.text });
+  } catch (e) {
+    // No backend yet → friendly fallback so the UI still flows.
+    currentChat.push({
+      role: "coach",
+      text: `I'm not wired up to the network yet — but I saved your message. (${e.message})`,
+    });
+  } finally {
+    chatSending = false;
+    persistCurrentChat();
+    renderChatMessages();
+  }
+}
+function openChatPopup() {
+  document.getElementById("chatPopup").classList.add("open");
+  document.getElementById("chatPopupBackdrop").classList.add("open");
+  document.getElementById("fabChat").classList.add("active");
+  renderChatMessages();
+  setTimeout(() => document.getElementById("chatPopupInput").focus(), 60);
+}
+function closeChatPopup() {
+  document.getElementById("chatPopup").classList.remove("open");
+  document.getElementById("chatPopupBackdrop").classList.remove("open");
+  document.getElementById("fabChat").classList.remove("active");
+  // Archive the conversation on close so it lands on the History page.
+  archiveCurrentChat();
+  renderChatHistory();
+  renderChatMessages();
+}
+function startNewChat() {
+  // Stash whatever's in the popup into history, then re-render the empty state with prompts.
+  archiveCurrentChat();
+  renderChatHistory();
+  renderChatMessages();
+  setTimeout(() => document.getElementById("chatPopupInput")?.focus(), 60);
+}
+function bindChatEvents() {
+  document.getElementById("fabChat").addEventListener("click", () => {
+    const open = document.getElementById("chatPopup").classList.contains("open");
+    if (open) closeChatPopup(); else openChatPopup();
+  });
+  document.getElementById("chatPopupClose").addEventListener("click", closeChatPopup);
+  document.getElementById("chatPopupNew").addEventListener("click", startNewChat);
+  document.getElementById("chatPopupBackdrop").addEventListener("click", closeChatPopup);
+  document.getElementById("chatPopupSend").addEventListener("click", sendChatMessage);
+  document.getElementById("chatPopupInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+  });
+  document.getElementById("chatHistorySearch").addEventListener("input", renderChatHistory);
+}
+
+function renderChatHistory() {
+  const listEl = document.getElementById("chatHistoryList");
+  if (!listEl) return;
+  const q = (document.getElementById("chatHistorySearch")?.value || "").trim().toLowerCase();
+  const filtered = q
+    ? chatHistory.filter((h) => h.messages.some((m) => m.text && m.text.toLowerCase().includes(q)))
+    : chatHistory;
+  listEl.innerHTML = "";
+  if (!filtered.length) {
+    const empty = document.createElement("div");
+    empty.className = "chat-history-empty";
+    empty.textContent = chatHistory.length
+      ? `No chats match "${q}".`
+      : "No past conversations yet. Open Coach with the green button and your chats will appear here.";
+    listEl.appendChild(empty);
+    return;
+  }
+  for (const h of filtered) {
+    const firstUser = h.messages.find((m) => m.role === "user");
+    const preview = (firstUser?.text || h.messages[0]?.text || "(empty)").trim();
+    const date = new Date(h.when).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    const item = document.createElement("button");
+    item.className = "chat-history-item";
+    item.innerHTML = `
+      <div class="chat-history-preview"></div>
+      <div class="chat-history-meta"></div>
+      <button class="chat-history-delete" aria-label="Delete">×</button>
+    `;
+    item.querySelector(".chat-history-preview").textContent = preview;
+    item.querySelector(".chat-history-meta").textContent = `${date} · ${h.messages.length} message${h.messages.length !== 1 ? "s" : ""}`;
+    item.addEventListener("click", (e) => {
+      if (e.target.classList.contains("chat-history-delete")) return;
+      // Move this conversation back into the active chat so the user can continue it.
+      archiveCurrentChat();
+      currentChat = h.messages.slice();
+      chatHistory = chatHistory.filter((x) => x.id !== h.id);
+      persistChatHistory();
+      persistCurrentChat();
+      renderChatHistory();
+      openChatPopup();
+    });
+    item.querySelector(".chat-history-delete").addEventListener("click", (e) => {
+      e.stopPropagation();
+      chatHistory = chatHistory.filter((x) => x.id !== h.id);
+      persistChatHistory();
+      renderChatHistory();
+    });
+    listEl.appendChild(item);
+  }
 }
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden" && state.dirty) saveState();
 });
 window.addEventListener("beforeunload", e => { if (state.dirty) saveState(); });
-document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    if (document.getElementById("chatPopup")?.classList.contains("open")) closeChatPopup();
+    else closeModal();
+  }
+});
 
-(async () => {
+// === AUTH GATE ===
+// Boot the app once we know the auth state. While signed-out, show the login overlay; the rest
+// of the page is still in the DOM but covered. Sign-in/out re-runs the relevant init bits.
+let __appBooted = false;
+async function bootApp() {
+  if (__appBooted) return;
+  __appBooted = true;
   await loadState();
   applyBuiltInNotes();
   applyBuiltInCoachDeletions();
+  loadChat();
+  loadProfileIntoUI();
   render();
   bindGlobalEvents();
+  switchView(state.currentView || "home");
+}
+function setLoginVisible(visible) {
+  const overlay = document.getElementById("loginOverlay");
+  if (!overlay) return;
+  overlay.classList.toggle("hidden", !visible);
+}
+(async () => {
+  let fb;
+  try {
+    // Race against a timeout so the app still boots if Firebase fails to load (e.g. offline).
+    fb = await Promise.race([
+      window.firebaseReady,
+      new Promise((_, rej) => setTimeout(() => rej(new Error("firebase load timeout")), 6000)),
+    ]);
+  } catch (e) {
+    console.warn("Firebase unavailable, running in local-only mode:", e);
+    setLoginVisible(false);
+    bootApp();
+    return;
+  }
+
+  document.getElementById("loginGoogleBtn").addEventListener("click", async () => {
+    const errEl = document.getElementById("loginError");
+    errEl.textContent = "";
+    try { await fb.signIn(); }
+    catch (e) {
+      // Popup-closed-by-user is expected — don't shout about it.
+      if (e?.code === "auth/popup-closed-by-user") return;
+      errEl.textContent = e?.message || String(e);
+    }
+  });
+
+  fb.onAuthStateChanged(fb.auth, (user) => {
+    window.gymAuthUser = user || null;
+    if (user) {
+      setLoginVisible(false);
+      bootApp();
+      // If the profile page is already up, re-render to show the new auth identity.
+      if (state?.currentView === "profile") loadProfileIntoUI();
+    } else {
+      setLoginVisible(true);
+    }
+  });
 })();
 </script>
 
