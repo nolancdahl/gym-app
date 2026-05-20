@@ -5307,7 +5307,11 @@ async function sendChatMessage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         messages: currentChat.map((m) => ({ role: m.role, text: m.text })),
-        userContext: { profile: loadProfile() },
+        userContext: {
+          profile: loadProfile(),
+          currentWeek: state?.currentWeek,
+          currentDay: state?.currentDay,
+        },
       }),
     });
     let data = {};
