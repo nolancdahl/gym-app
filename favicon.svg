@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#2a1010"/>
+  <text x="16" y="44" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="34" fill="#c46a6a">H</text>
+  <g transform="translate(36,20) scale(1.0)" stroke="#c46a6a" stroke-width="2.2" stroke-linecap="round" fill="none">
+    <rect x="0" y="2" width="4" height="8" rx="1"/>
+    <rect x="16" y="2" width="4" height="8" rx="1"/>
+    <line x1="4" y1="6" x2="16" y2="6"/>
+    <line x1="4" y1="3" x2="4" y2="9"/>
+    <line x1="16" y1="3" x2="16" y2="9"/>
+  </g>
+</svg>

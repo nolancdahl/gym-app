@@ -72,6 +72,7 @@ const buildSystemPrompt = (userContext = {}) => [
   'USER PROFILE',
   '',
   formatUserContext(userContext),
+  ...(userContext.crossApp ? ['', '--------', '', userContext.crossApp] : []),
   '',
   'Address the user directly. Use their stats, goals, and injuries to ground advice when relevant. If they have not filled something in, do not invent values — work with what is there and nudge them to fill it in.',
 ].join('\n')

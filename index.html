@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nolán's Gym</title>
+<title>Hyper</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
@@ -5291,6 +5292,101 @@ function renderChatMessages() {
   }
   body.scrollTop = body.scrollHeight;
 }
+// --- Cross-app context (homebase suite) -----------------------------------------------------
+// Static HTML can't import the canonical src/lib/crossAppContext.js the Vite apps use, so the
+// manifest + reader are inlined here. KEEP THIS MANIFEST IN SYNC with that canonical file.
+// Lets Arnold reason across the user's whole life (finances, bucket list, meals, etc.).
+const CROSS_APP_MANIFEST = [
+  { app: "shared",   label: "Shared identity (name, photo, height, weight, age, rhr)", coll: "profile", id: "homebase_shared_profile_v1" },
+  { app: "finances", label: "Finances: profile",         coll: "data", id: "ledger_profile_v1" },
+  { app: "finances", label: "Finances: income setup",    coll: "data", id: "ledger_income_setup_v1" },
+  { app: "finances", label: "Finances: net worth",       coll: "data", id: "ledger_net_worth_v1" },
+  { app: "finances", label: "Finances: goals",           coll: "data", id: "ledger_goals_v1", cap: 30 },
+  { app: "finances", label: "Finances: subscriptions",   coll: "data", id: "ledger_subscriptions_v1", cap: 40 },
+  { app: "finances", label: "Finances: bills",           coll: "data", id: "ledger_bills_v1", cap: 40 },
+  { app: "clothes",  label: "Style: profile/measurements", coll: "profile", id: "garmint_profile_v1" },
+  { app: "clothes",  label: "Style: brand fits",           coll: "profile", id: "garmint_brand_fits_v2", cap: 40 },
+  { app: "clothes",  label: "Style: color palette",        coll: "profile", id: "garmint_color_palette_v1" },
+  { app: "clothes",  label: "Style: sizes",                coll: "profile", id: "garmint_sizes_v1" },
+  { app: "clothes",  label: "Style: closet",               coll: "data", id: "closet", cap: 50 },
+  { app: "clothes",  label: "Style: wishlist",             coll: "data", id: "wishlist", cap: 50 },
+  { app: "daily",    label: "Daily tasks: profile",        coll: "data", id: "sunrise_profile_v1" },
+  { app: "daily",    label: "Daily tasks: lifetime totals",coll: "data", id: "sunrise_totals_v1" },
+  { app: "daily",    label: "Daily tasks: savings funds",  coll: "data", id: "sunrise_funds_v1" },
+  { app: "gym",      label: "Gym: profile (goals, injuries)", coll: "profile", id: "gym_profile_v1" },
+  { app: "bucket",   label: "Bucket list: full state",     coll: "buckit", id: "state" },
+  { app: "skincare", label: "Skincare: profile",           coll: "data", id: "user_profile" },
+  { app: "skincare", label: "Skincare: journal",           coll: "data", id: "journal_entries", cap: 20 },
+  { app: "skincare", label: "Skincare: hair log",          coll: "data", id: "hair_entries", cap: 20 },
+  { app: "meals",    label: "Meals: preferences",          coll: "data", id: "userPreferences" },
+  { app: "meals",    label: "Meals: macro goals",          coll: "data", id: "macroGoalsV5" },
+  { app: "meals",    label: "Meals: budget",               coll: "data", id: "budget" },
+  { app: "meals",    label: "Meals: triggers/allergies",   coll: "data", id: "userTriggers" },
+  { app: "meals",    label: "Meals: profile notes",        coll: "data", id: "profileNotes" },
+  { app: "cleaning", label: "Cleaning: chore log",         coll: "data", id: "cleaning_chores_v1" },
+];
+function _xUnwrap(data) {
+  if (!data || typeof data !== "object") return data;
+  if ("value" in data) return data.value;
+  if ("items" in data) return data.items;
+  const { updatedAt, ...rest } = data; return rest;
+}
+function _xIsEmpty(v) {
+  return v == null || (Array.isArray(v) && !v.length) ||
+    (typeof v === "object" && !Array.isArray(v) && !Object.keys(v).length) ||
+    (typeof v === "string" && !v.trim());
+}
+function _xCompact(value, cap) {
+  cap = cap || 25;
+  if (value == null || typeof value !== "object") {
+    if (typeof value === "string" && value.length > 600) return value.slice(0, 600) + "…";
+    return value;
+  }
+  if (Array.isArray(value)) {
+    const h = value.slice(0, cap).map((v) => _xCompact(v, cap));
+    if (value.length > cap) h.push("…" + (value.length - cap) + " more");
+    return h;
+  }
+  const o = {};
+  for (const [k, v] of Object.entries(value)) {
+    if (typeof v === "string" && (v.startsWith("data:") || v.length > 2000)) { o[k] = "[image omitted]"; continue; }
+    o[k] = _xCompact(v, cap);
+  }
+  return o;
+}
+// Cached once per chat-open (see openChatPopup) so we don't re-read Firestore on every message.
+let chatCrossAppBlock = "";
+async function buildCrossAppBlock(excludeApp) {
+  try {
+    const fb = window.gymFirebase, user = window.gymAuthUser;
+    if (!fb || !fb.db || !user?.uid) return "";
+    const entries = CROSS_APP_MANIFEST.filter((m) => m.app !== excludeApp);
+    const results = await Promise.all(entries.map(async (m) => {
+      try {
+        const snap = await fb.getDoc(fb.doc(fb.db, "users", user.uid, m.coll, m.id));
+        if (!snap.exists()) return null;
+        const value = _xUnwrap(snap.data());
+        return _xIsEmpty(value) ? null : { ...m, value };
+      } catch { return null; }
+    }));
+    const byApp = {};
+    for (const r of results) { if (!r) continue; (byApp[r.app] = byApp[r.app] || []).push(r); }
+    const apps = Object.keys(byApp);
+    if (!apps.length) return "";
+    const lines = [
+      "CROSS-APP CONTEXT — the user's data from their OTHER homebase apps",
+      "(Use this to reason across the user's whole life — goals, profile, plans, and habits live",
+      "in sibling apps. Reference it only when relevant; never dump it back verbatim.)", "",
+    ];
+    for (const app of apps) for (const sec of byApp[app]) {
+      lines.push("### " + sec.label);
+      lines.push(JSON.stringify(_xCompact(sec.value, sec.cap || 25)));
+      lines.push("");
+    }
+    return lines.join("\n").trim();
+  } catch (e) { console.warn("cross-app context failed:", e); return ""; }
+}
+
 async function sendChatMessage() {
   if (chatSending) return;
   const inputEl = document.getElementById("chatPopupInput");
@@ -5302,6 +5398,7 @@ async function sendChatMessage() {
   chatSending = true;
   renderChatMessages();
   try {
+    const crossApp = chatCrossAppBlock;
     const res = await fetch("/.netlify/functions/coach-chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -5311,6 +5408,7 @@ async function sendChatMessage() {
           profile: loadProfile(),
           currentWeek: state?.currentWeek,
           currentDay: state?.currentDay,
+          crossApp,
         },
       }),
     });
@@ -5335,6 +5433,8 @@ function openChatPopup() {
   document.getElementById("chatPopupBackdrop").classList.add("open");
   document.getElementById("fabChat").classList.add("active");
   renderChatMessages();
+  // Refresh the cross-app snapshot once per open (not per message).
+  buildCrossAppBlock("gym").then((block) => { chatCrossAppBlock = block; });
   setTimeout(() => document.getElementById("chatPopupInput").focus(), 60);
 }
 function closeChatPopup() {
@@ -5503,7 +5603,7 @@ function setLoginVisible(visible) {
 </script>
 
 <!-- homebase launcher: top-left button + side panel listing all sibling apps.
-     Source: Home Base App\public\launcher.js -->
+     Source: Assistant App\public\launcher.js -->
 <script>
   (function () {
     var isLocal = /^(localhost|127\.0\.0\.1|192\.|10\.)/.test(location.hostname)
