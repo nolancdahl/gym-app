@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hyper</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="manifest" href="/manifest.json" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta name="theme-color" content="#000000" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="mobile-web-app-capable" content="yes" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
@@ -320,6 +326,13 @@ body {
   padding: 0 24px;
 }
 @media (max-width: 720px) { .main { margin-top: 28px; padding: 0 12px; } }
+/* Phones: shrink the workout content a touch so text reads smaller. The week/day
+   nav lives outside .main (untouched), and the workout header is counter-scaled
+   so "Upper 1 · Week 1 · Tuesday" keeps its size. */
+@media (max-width: 640px) {
+  .main { zoom: 0.9; }
+  .main .workout-header { zoom: 1.111; }
+}
 
 .workout-header {
   display: flex; flex-direction: column;
@@ -2359,6 +2372,24 @@ body { padding-bottom: 74px; }
 
 /* Hide the old top L/P toggle — bottom nav replaces it */
 .top-corner-row { display: none; }
+
+/* +$0.25 reward flier — fires when an exercise is checked off, flies to the
+   top-left homebase launcher button. */
+.gym-reward-fly {
+  position: fixed; left: 0; top: 0; z-index: 9000;
+  pointer-events: none; white-space: nowrap;
+  font-family: 'Manrope', system-ui, sans-serif; font-weight: 800; font-size: 26px;
+  color: #2EB872; letter-spacing: -0.02em; line-height: 1;
+  text-shadow: 0 0 16px rgba(46, 184, 114, 0.55), 0 4px 12px rgba(0, 0, 0, 0.4);
+  animation: gymRewardFlyToCorner 1.2s cubic-bezier(0.45, 0, 0.25, 1) forwards;
+}
+@keyframes gymRewardFlyToCorner {
+  0%   { transform: translate(calc(var(--reward-start-x) - 50%), calc(var(--reward-start-y) - 50%)) scale(0.2);  opacity: 0; }
+  12%  { transform: translate(calc(var(--reward-start-x) - 50%), calc(var(--reward-start-y) - 50%)) scale(1.45); opacity: 1; }
+  28%  { transform: translate(calc(var(--reward-start-x) - 50%), calc(var(--reward-start-y) - 50%)) scale(1.0);  opacity: 1; }
+  88%  { transform: translate(calc(var(--reward-end-x)   - 50%), calc(var(--reward-end-y)   - 50%)) scale(0.55); opacity: 1; }
+  100% { transform: translate(calc(var(--reward-end-x)   - 50%), calc(var(--reward-end-y)   - 50%)) scale(0.2);  opacity: 0; }
+}
 </style>
 </head>
 <body>
@@ -2371,7 +2402,7 @@ body { padding-bottom: 74px; }
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
   import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
 
   const firebaseConfig = {
@@ -2394,7 +2425,7 @@ body { padding-bottom: 74px; }
     signIn: () => signInWithPopup(auth, provider),
     signOut: () => signOut(auth),
     onAuthStateChanged,
-    doc, setDoc, getDoc, onSnapshot, serverTimestamp,
+    doc, setDoc, getDoc, onSnapshot, serverTimestamp, increment,
     storageRef: ref, uploadBytes, getDownloadURL,
   };
   window.__resolveFirebase?.(window.gymFirebase);
@@ -2404,7 +2435,7 @@ body { padding-bottom: 74px; }
 <div id="loginOverlay" class="login-overlay">
   <div class="login-card">
     <div class="login-brand">NOLÁN'S GYM</div>
-    <div class="login-sub">Sign in to sync workouts, profile, and Arnold across devices.</div>
+    <div class="login-sub">Sign in to sync workouts, profile, and Jeeves across devices.</div>
     <button id="loginGoogleBtn" class="login-google-btn">
       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
         <path fill="#fff" d="M21.35 11.1H12v2.92h5.35c-.23 1.51-1.62 4.42-5.35 4.42-3.22 0-5.85-2.66-5.85-5.95s2.63-5.95 5.85-5.95c1.83 0 3.06.78 3.76 1.45l2.57-2.48C16.83 3.97 14.65 3 12 3 6.97 3 3 6.97 3 12s3.97 9 9 9c5.2 0 8.65-3.65 8.65-8.8 0-.59-.06-1.04-.3-1.1z"/>
@@ -2587,7 +2618,7 @@ body { padding-bottom: 74px; }
 </div>
 
 <!-- Floating chat button + popup -->
-<button class="fab-chat" id="fabChat" aria-label="Ask Arnold">
+<button class="fab-chat" id="fabChat" aria-label="Ask Jeeves">
   <span class="fab-icon fab-icon-bicep">
     <svg viewBox="0 0 24 24"><path d="M12.409 13.017A5 5 0 0 1 22 15c0 3.866-4 7-9 7-4.077 0-8.153-.82-10.371-2.462-.426-.316-.631-.832-.62-1.362C2.118 12.723 2.627 2 10 2a3 3 0 0 1 3 3 2 2 0 0 1-2 2c-1.105 0-1.64-.444-2-1"/><path d="M15 14a5 5 0 0 0-7.584 2"/><path d="M9.964 6.825C8.019 7.977 9.5 13 8 15"/></svg>
   </span>
@@ -2596,10 +2627,10 @@ body { padding-bottom: 74px; }
   </span>
 </button>
 <div class="chat-popup-backdrop" id="chatPopupBackdrop"></div>
-<div class="chat-popup" id="chatPopup" role="dialog" aria-label="Ask Arnold">
+<div class="chat-popup" id="chatPopup" role="dialog" aria-label="Ask Jeeves">
   <div class="chat-popup-header">
     <div>
-      <div class="chat-popup-title">Ask Arnold</div>
+      <div class="chat-popup-title">Ask Jeeves</div>
       <div class="chat-popup-sub">Lifts, form, programming, recovery</div>
     </div>
     <div class="chat-popup-actions">
@@ -2620,7 +2651,7 @@ body { padding-bottom: 74px; }
   </div>
   <div class="chat-popup-body" id="chatPopupBody"></div>
   <div class="chat-popup-input-row">
-    <input type="text" class="chat-popup-input" id="chatPopupInput" placeholder="Ask Arnold anything...">
+    <input type="text" class="chat-popup-input" id="chatPopupInput" placeholder="Ask Jeeves anything...">
     <button class="chat-popup-send" id="chatPopupSend" aria-label="Send">
       <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
     </button>
@@ -3017,6 +3048,8 @@ async function saveState(force=false) {
     renderWeekNav();
     renderDayNav();
     updateOverallProgress();
+    // Push to Firestore (debounced) unless this save was triggered by a remote update.
+    if (!__workoutFromRemote) scheduleWorkoutSync();
   } catch (e) {
     console.error("Save failed:", e);
   }
@@ -3031,6 +3064,151 @@ function markDirty() {
   if (autoSaveTimer) clearTimeout(autoSaveTimer);
   autoSaveTimer = setTimeout(() => { saveState(); }, AUTOSAVE_DEBOUNCE_MS);
   updateOverallProgress();
+}
+
+// === WORKOUT DATA SYNC ===
+// Syncs logs, exerciseData, hrFiles, deletedCoachNotes, oneRepMaxes to Firestore
+// so workout progress carries across devices/logins.
+const WORKOUT_DATA_DOC = "gym_workout_data_v1";
+let __workoutUnsub = null;
+let __workoutWriteTimer = null;
+let __workoutFromRemote = false;
+
+function workoutPayload() {
+  // hrFiles excluded — heart rate data can be large and would risk the 1MB Firestore doc limit.
+  return {
+    logs: state.logs,
+    exerciseData: state.exerciseData,
+    deletedCoachNotes: state.deletedCoachNotes,
+    builtInNotesApplied_v44: state.builtInNotesApplied_v44,
+    oneRepMaxes: state.oneRepMaxes,
+    lastViewed: state.currentWeek + "|" + state.currentDay,
+  };
+}
+
+async function writeWorkoutToFirestore() {
+  if (__workoutFromRemote) return;
+  const user = window.gymAuthUser;
+  const fb = window.gymFirebase;
+  if (!user || !fb) return;
+  try {
+    const ref = fb.doc(fb.db, "users", user.uid, "profile", WORKOUT_DATA_DOC);
+    await fb.setDoc(ref, { value: workoutPayload(), updatedAt: Date.now() }, { merge: true });
+  } catch (e) { console.warn("workout sync failed:", e); }
+}
+
+function scheduleWorkoutSync() {
+  if (__workoutWriteTimer) clearTimeout(__workoutWriteTimer);
+  __workoutWriteTimer = setTimeout(writeWorkoutToFirestore, 500);
+}
+
+function applyRemoteWorkout(remote) {
+  if (!remote || typeof remote !== "object") return;
+  __workoutFromRemote = true;
+  try {
+    // Deep-merge logs: remote wins per day-key, but keep local-only day-keys.
+    const mergedLogs = { ...state.logs };
+    for (const [k, v] of Object.entries(remote.logs || {})) {
+      mergedLogs[k] = v;
+    }
+    state.logs = mergedLogs;
+
+    // Deep-merge exerciseData: remote wins per exercise key.
+    const mergedEx = { ...state.exerciseData };
+    for (const [k, v] of Object.entries(remote.exerciseData || {})) {
+      mergedEx[k] = v;
+    }
+    state.exerciseData = mergedEx;
+
+    // Union deleted coach notes
+    state.deletedCoachNotes = { ...state.deletedCoachNotes, ...(remote.deletedCoachNotes || {}) };
+
+    // Take remote ORM if present
+    if (remote.oneRepMaxes) state.oneRepMaxes = remote.oneRepMaxes;
+
+    if (remote.builtInNotesApplied_v44) state.builtInNotesApplied_v44 = true;
+
+    // Save merged state to localStorage (don't trigger Firestore write-back)
+    state.dirty = true;
+    saveState(true);
+
+    // Re-render if on a workout view
+    if (state.currentView === "workout" || state.currentView === "home") {
+      render();
+    }
+  } finally {
+    __workoutFromRemote = false;
+  }
+}
+
+function subscribeToWorkout(uid) {
+  if (__workoutUnsub) { __workoutUnsub(); __workoutUnsub = null; }
+  const fb = window.gymFirebase;
+  if (!fb) return;
+  const ref = fb.doc(fb.db, "users", uid, "profile", WORKOUT_DATA_DOC);
+  __workoutUnsub = fb.onSnapshot(ref, (snap) => {
+    if (!snap.exists()) return;
+    const remote = snap.data()?.value;
+    applyRemoteWorkout(remote);
+  }, (err) => console.warn("workout listen error:", err));
+}
+
+async function initialWorkoutSync(uid) {
+  const fb = window.gymFirebase;
+  if (!fb) return;
+  try {
+    const ref = fb.doc(fb.db, "users", uid, "profile", WORKOUT_DATA_DOC);
+    const snap = await fb.getDoc(ref);
+    if (snap.exists()) {
+      const remote = snap.data()?.value;
+      if (remote && typeof remote === "object") {
+        applyRemoteWorkout(remote);
+      }
+    }
+    // Push local state up so new device data makes it to the cloud.
+    await writeWorkoutToFirestore();
+  } catch (e) { console.warn("initial workout sync failed:", e); }
+}
+
+const FUNNY_TOTALS_DOC = 'sunrise_totals_v1';
+const FUNNY_DAILY_LOG_DOC = 'funny_money_daily_v1';
+const _todayKey = () => new Date().toISOString().slice(0, 10);
+async function bumpFunnyMoney(cents = 25) {
+  const uid = window.gymAuthUser?.uid;
+  const fb = window.gymFirebase;
+  if (!uid || !fb) return;
+  try {
+    const totalsRef = fb.doc(fb.db, 'users', uid, 'data', FUNNY_TOTALS_DOC);
+    const dailyRef = fb.doc(fb.db, 'users', uid, 'data', FUNNY_DAILY_LOG_DOC);
+    await Promise.all([
+      fb.setDoc(totalsRef, {
+        value: {
+          lifetimeCents: fb.increment(cents),
+          lifetimeDone: fb.increment(cents > 0 ? 1 : -1),
+        },
+        updatedAt: fb.serverTimestamp(),
+      }, { merge: true }),
+      fb.setDoc(dailyRef, {
+        value: { [_todayKey()]: { gym: fb.increment(Math.max(0, cents)) } },
+        updatedAt: fb.serverTimestamp(),
+      }, { merge: true }),
+    ]);
+  } catch (e) { console.warn('bumpFunnyMoney failed:', e?.message || e); }
+}
+
+function flyReward(originEl) {
+  const start = originEl.getBoundingClientRect();
+  const launcher = document.querySelector('.hb-launch-btn');
+  const end = launcher ? launcher.getBoundingClientRect() : { left: 12, top: 12, width: 40, height: 40 };
+  const span = document.createElement('span');
+  span.className = 'gym-reward-fly';
+  span.textContent = '+$0.25';
+  span.style.setProperty('--reward-start-x', `${start.left + start.width / 2}px`);
+  span.style.setProperty('--reward-start-y', `${start.top + start.height / 2}px`);
+  span.style.setProperty('--reward-end-x',   `${end.left   + end.width   / 2}px`);
+  span.style.setProperty('--reward-end-y',    `${end.top    + end.height  / 2}px`);
+  document.body.appendChild(span);
+  setTimeout(() => span.remove(), 1300);
 }
 
 function getLogKey(week, day) { return "w" + week + "-" + day.replace(/\s+/g, "").toLowerCase(); }
@@ -4038,24 +4216,41 @@ function rebuildNotesList(card, exName) {
   }
 }
 
+// Toggle an exercise tile's done state. Shared by the swipe-done button tap
+// and the swipe-right-to-complete release gesture. Pass forceDone=true to
+// only ever mark done (used by the swipe gesture so a right-swipe never undoes).
+function toggleExerciseDone(btn, forceDone = false) {
+  const wrap = btn.closest(".exercise-swipe-wrap");
+  if (!wrap) return;
+  const card = wrap.querySelector(".exercise");
+  const isAdded = wrap.dataset.kind === 'added';
+  const exLog = isAdded
+    ? getAddedExLog(state.currentWeek, state.currentDay, wrap.dataset.addedId)
+    : getExLog(state.currentWeek, state.currentDay, parseInt(wrap.dataset.phase), parseInt(wrap.dataset.idx));
+  const next = forceDone ? true : !exLog.done;
+  if (next === exLog.done) {
+    // Already in the desired state (e.g. swiped right on an already-done tile).
+    // Still close the swipe so the tile settles back.
+    setTimeout(() => { wrap.classList.remove('swiped-left', 'swiped-right'); }, 700);
+    return;
+  }
+  exLog.done = next;
+  btn.classList.toggle("checked", exLog.done);
+  card.classList.toggle("done", exLog.done);
+  if (exLog.done) { bumpFunnyMoney(25); flyReward(btn); }
+  else { bumpFunnyMoney(-25); }
+  // Close the swipe so they can see the result
+  setTimeout(() => {
+    wrap.classList.remove('swiped-left', 'swiped-right');
+  }, 700);
+  markDirty();
+}
+
 function bindEvents() {
   document.querySelectorAll("[data-action='toggle-done']").forEach(btn => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      const wrap = btn.closest(".exercise-swipe-wrap");
-      const card = wrap.querySelector(".exercise");
-      const isAdded = wrap.dataset.kind === 'added';
-      const exLog = isAdded
-        ? getAddedExLog(state.currentWeek, state.currentDay, wrap.dataset.addedId)
-        : getExLog(state.currentWeek, state.currentDay, parseInt(wrap.dataset.phase), parseInt(wrap.dataset.idx));
-      exLog.done = !exLog.done;
-      btn.classList.toggle("checked", exLog.done);
-      card.classList.toggle("done", exLog.done);
-      // Close the swipe so they can see the result
-      setTimeout(() => {
-        wrap.classList.remove('swiped-left', 'swiped-right');
-      }, 700);
-      markDirty();
+      toggleExerciseDone(btn);
     });
   });
   
@@ -4269,6 +4464,10 @@ const swipe = {
 };
 
 const SWIPE_THRESHOLD = 28;
+// Right-swipe past this larger threshold completes the exercise directly on
+// release (no separate tap on the check circle). Kept near the max travel so
+// it's a deliberate full swipe, not an accidental nudge.
+const SWIPE_COMPLETE_THRESHOLD = 56;
 const SWIPE_MAX = 72;
 
 function currentOpenSide(wrap) {
@@ -4388,11 +4587,22 @@ function onSwipeEnd(e) {
       if (swipe.openSide === 'right') swipe.el.classList.add('swiped-right');
     }
   } else {
-    // Was neutral. Open if dragged > threshold, else stay neutral.
-    if (absDx > SWIPE_THRESHOLD) {
-      if (swipe.direction === 'left') {
+    // Was neutral.
+    if (swipe.direction === 'left') {
+      // Left swipe reveals the Add Note action (unchanged behavior).
+      if (absDx > SWIPE_THRESHOLD) {
         swipe.el.classList.add('swiped-right');
-      } else {
+      }
+    } else {
+      // Right swipe = complete. Past the (higher) complete threshold, mark
+      // the exercise done immediately on release instead of just revealing
+      // the check circle. Below that but past the reveal threshold, fall back
+      // to revealing the circle so a tentative swipe still shows the action.
+      if (absDx > SWIPE_COMPLETE_THRESHOLD) {
+        swipe.el.classList.add('swiped-left');
+        const doneBtn = swipe.el.querySelector("[data-action='toggle-done']");
+        if (doneBtn) toggleExerciseDone(doneBtn, true);
+      } else if (absDx > SWIPE_THRESHOLD) {
         swipe.el.classList.add('swiped-left');
       }
     }
@@ -5260,7 +5470,7 @@ function renderChatMessages() {
     empty.className = "chat-empty-state";
     const text = document.createElement("div");
     text.className = "chat-empty-text";
-    text.textContent = "Ask Arnold anything — programming, form, recovery, supplements.";
+    text.textContent = "Ask Jeeves anything — programming, form, recovery, supplements.";
     empty.appendChild(text);
     const promptsEl = document.createElement("div");
     promptsEl.className = "chat-prompts";
@@ -5314,6 +5524,7 @@ const CROSS_APP_MANIFEST = [
   { app: "daily",    label: "Daily tasks: lifetime totals",coll: "data", id: "sunrise_totals_v1" },
   { app: "daily",    label: "Daily tasks: savings funds",  coll: "data", id: "sunrise_funds_v1" },
   { app: "gym",      label: "Gym: profile (goals, injuries)", coll: "profile", id: "gym_profile_v1" },
+  { app: "gym",      label: "Gym: workout data (logs, exercises, ORMs)", coll: "profile", id: "gym_workout_data_v1" },
   { app: "bucket",   label: "Bucket list: full state",     coll: "buckit", id: "state" },
   { app: "skincare", label: "Skincare: profile",           coll: "data", id: "user_profile" },
   { app: "skincare", label: "Skincare: journal",           coll: "data", id: "journal_entries", cap: 20 },
@@ -5399,7 +5610,8 @@ async function sendChatMessage() {
   renderChatMessages();
   try {
     const crossApp = chatCrossAppBlock;
-    const res = await fetch("/.netlify/functions/coach-chat", {
+    // Unified Jeeves: routes through homebase's central function with appKey: 'gym'.
+    const res = await fetch("https://nolan-jeeves.netlify.app/.netlify/functions/jeeves-chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -5410,16 +5622,17 @@ async function sendChatMessage() {
           currentDay: state?.currentDay,
           crossApp,
         },
+        appKey: 'gym',
       }),
     });
     let data = {};
     try { data = await res.json(); } catch {}
-    if (!res.ok || !data.text) throw new Error(data.error || `Coach offline (HTTP ${res.status})`);
-    currentChat.push({ role: "coach", text: data.text });
+    if (!res.ok || !data.text) throw new Error(data.error || `Jeeves offline (HTTP ${res.status})`);
+    currentChat.push({ role: "jeeves", text: data.text });
   } catch (e) {
     // No backend yet → friendly fallback so the UI still flows.
     currentChat.push({
-      role: "coach",
+      role: "jeeves",
       text: `I'm not wired up to the network yet — but I saved your message. (${e.message})`,
     });
   } finally {
@@ -5588,14 +5801,17 @@ function setLoginVisible(visible) {
       try {
         await initialProfileSync(user.uid);
         await initialChatSync(user.uid);
+        await initialWorkoutSync(user.uid);
         subscribeToProfile(user.uid);
         subscribeToChat(user.uid);
+        subscribeToWorkout(user.uid);
       } catch (e) { console.warn("sync bootstrap failed:", e); }
     } else {
       // Tear down listeners so the next user doesn't see the previous user's data.
       if (__profileUnsub) { __profileUnsub(); __profileUnsub = null; }
       if (__chatHistoryUnsub) { __chatHistoryUnsub(); __chatHistoryUnsub = null; }
       if (__chatCurrentUnsub) { __chatCurrentUnsub(); __chatCurrentUnsub = null; }
+      if (__workoutUnsub) { __workoutUnsub(); __workoutUnsub = null; }
       setLoginVisible(true);
     }
   });
@@ -5614,6 +5830,15 @@ function setLoginVisible(visible) {
     s.dataset.appKey = 'gym'
     document.body.appendChild(s)
   })()
+</script>
+
+<!-- Register the service worker so Chrome treats this as an installable PWA. -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function () {})
+    })
+  }
 </script>
 </body>
 </html>
