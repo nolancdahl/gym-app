@@ -6621,10 +6621,6 @@ function setLoginVisible(visible) {
         await initialProfileSync(user.uid);
         await initialChatSync(user.uid);
         await initialWorkoutSync(user.uid);
-        subscribeToProfile(user.uid);
-        subscribeToChat(user.uid);
-        subscribeToWorkout(user.uid);
-        subscribeToMotivation(user.uid);
       } catch (e) { console.warn("sync bootstrap failed:", e); }
     } else {
       // Tear down listeners so the next user doesn't see the previous user's data.
