@@ -171,7 +171,7 @@ body {
    0 = full (100%). Driven by updateOverallProgress(). */
 .page-arch path { stroke: var(--green); transition: stroke-dashoffset 520ms var(--ease-smooth); }
 /* Push every page's content down so titles clear the top arch line. */
-#logView, #progressView, #chatHistoryView, #profileView, #equipmentView, #motivationView {
+#logView, #progressView, #profileView, #motivationView, #stretchView {
   padding-top: 44px;
 }
 
@@ -1865,6 +1865,153 @@ body { padding-bottom: 74px; }
 .nav-tab:hover { color: var(--text-secondary); }
 .nav-tab.active:hover { color: var(--green); }
 
+/* === STRETCH PAGE === */
+.stretch-wrap { max-width: 640px; margin: 58px auto 0; padding: 0 16px 96px; }
+.stretch-wrap .page-title { text-align: center; }
+
+/* Segmented toggle — reuses equip-toggle shape but scoped to stretch */
+.stretch-toggle {
+  position: relative; display: flex; margin: 0 auto 18px;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-emphasis);
+  border-radius: 999px; padding: 4px;
+}
+.stretch-toggle.cols-2 { max-width: 240px; }
+.stretch-toggle.cols-2 .stretch-toggle-thumb { width: calc((100% - 8px) / 2); }
+.stretch-toggle.cols-3 { max-width: 320px; }
+.stretch-toggle.cols-3 .stretch-toggle-thumb { width: calc((100% - 8px) / 3); }
+.stretch-toggle.cols-4 { max-width: 380px; }
+.stretch-toggle.cols-4 .stretch-toggle-thumb { width: calc((100% - 8px) / 4); }
+.stretch-toggle-thumb {
+  position: absolute; top: 4px; bottom: 4px; left: 4px; z-index: 0;
+  border-radius: 999px; background: var(--green);
+  transition: transform 300ms var(--ease-smooth), width 300ms var(--ease-smooth);
+}
+.stretch-toggle button {
+  position: relative; z-index: 1; flex: 1; border: none; background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit; font-size: 15px; font-weight: 700; letter-spacing: 0.04em;
+  text-transform: uppercase; padding: 9px 0; border-radius: 999px; cursor: pointer;
+  transition: color 240ms var(--ease-smooth);
+  white-space: nowrap;
+}
+.stretch-toggle button.active { color: #0F0F0F; }
+
+/* Secondary toggles — smaller, outline-only accent */
+.stretch-toggle.secondary {
+  padding: 3px; margin-bottom: 12px;
+  background: transparent; border-color: rgba(166, 173, 184, 0.12);
+}
+.stretch-toggle.secondary .stretch-toggle-thumb {
+  background: transparent;
+  border: 1.5px solid var(--green);
+  top: 3px; bottom: 3px; left: 3px;
+}
+.stretch-toggle.secondary.cols-2 { max-width: 200px; }
+.stretch-toggle.secondary.cols-2 .stretch-toggle-thumb { width: calc((100% - 6px) / 2); }
+.stretch-toggle.secondary.cols-4 { max-width: 340px; }
+.stretch-toggle.secondary.cols-4 .stretch-toggle-thumb { width: calc((100% - 6px) / 4); }
+.stretch-toggle.secondary button {
+  font-size: 13px; font-weight: 600; padding: 6px 0;
+  color: var(--text-muted); letter-spacing: 0.05em;
+}
+.stretch-toggle.secondary button.active { color: var(--green); }
+
+/* Timeline table */
+.stretch-timeline {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+.stretch-timeline th {
+  font-size: 13px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-muted);
+  padding: 8px 10px; text-align: left;
+  border-bottom: 1px solid var(--border-emphasis);
+}
+.stretch-timeline td {
+  padding: 10px 10px;
+  font-size: 17px; font-weight: 500;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: top;
+}
+.stretch-timeline td:first-child {
+  font-size: 15px; font-weight: 600;
+  color: var(--green);
+  white-space: nowrap;
+  width: 90px;
+}
+.stretch-timeline td:nth-child(2) {
+  font-weight: 700;
+  min-width: 120px;
+}
+.stretch-timeline td:last-child {
+  font-size: 15px; font-weight: 500;
+  color: var(--text-secondary);
+}
+.stretch-timeline tr:last-child td { border-bottom: none; }
+.stretch-empty {
+  text-align: center; padding: 48px 20px; color: var(--text-muted);
+  font-size: 18px; font-weight: 600;
+}
+
+/* Yoga card layout (replaces table for yoga) */
+.yoga-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px; padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex; gap: 14px; align-items: flex-start;
+}
+.yoga-card-img {
+  flex-shrink: 0; width: 90px; height: 72px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px; overflow: hidden;
+  cursor: pointer;
+}
+.yoga-card-img img {
+  width: 100%; height: 100%; object-fit: cover;
+  display: block;
+}
+
+/* Yoga image lightbox */
+.yoga-lightbox {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity 250ms ease, visibility 250ms;
+}
+.yoga-lightbox.open {
+  opacity: 1; visibility: visible; pointer-events: auto;
+}
+.yoga-lightbox img {
+  max-width: 100%; max-height: 85vh;
+  border-radius: 14px; object-fit: contain;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+.yoga-lightbox-close {
+  position: absolute; top: 18px; right: 18px;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: none; color: #fff; font-size: 22px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.yoga-card-body { flex: 1; min-width: 0; }
+.yoga-card-time {
+  font-size: 13px; font-weight: 600; color: var(--green);
+  letter-spacing: 0.04em; margin-bottom: 2px;
+}
+.yoga-card-action {
+  font-size: 17px; font-weight: 700; color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.yoga-card-notes {
+  font-size: 14px; font-weight: 500; color: var(--text-secondary);
+  line-height: 1.4;
+}
+
 /* === EQUIPMENT PAGE === */
 .equip-wrap { max-width: 640px; margin: 58px auto 0; padding: 0 16px 96px; }
 @media (max-width: 720px) { .equip-wrap { margin-top: 58px; } }
@@ -2726,17 +2873,17 @@ body { padding-bottom: 74px; }
         <button class="profile-action-btn danger" id="profileClearChatBtn">Clear chat history</button>
       </div>
     </div>
-  </div>
-</div>
 
-<div id="chatHistoryView" style="display:none">
-  <div class="chat-history-page">
-    <div class="chat-history-header">
-      <div class="chat-history-title">Chat</div>
-      <div class="chat-history-sub">Past conversations with Coach</div>
+    <div class="profile-section">
+      <div class="profile-section-title">Equipment</div>
+      <div id="equipContent" class="equip-wrap" style="margin:0;padding:0"></div>
     </div>
-    <input type="text" class="chat-history-search" id="chatHistorySearch" placeholder="Search past chats...">
-    <div class="chat-history-list" id="chatHistoryList"></div>
+
+    <div class="profile-section">
+      <div class="profile-section-title">Chat history</div>
+      <input type="text" class="chat-history-search" id="chatHistorySearch" placeholder="Search past chats..." style="margin-bottom:12px">
+      <div class="chat-history-list" id="chatHistoryList"></div>
+    </div>
   </div>
 </div>
 
@@ -2781,17 +2928,23 @@ body { padding-bottom: 74px; }
   </div>
 </div>
 
-<!-- Equipment grid (rendered by renderEquipmentView) -->
-<div id="equipmentView" style="display:none">
-  <div class="equip-wrap" id="equipContent"></div>
-</div>
-
 <!-- Motivation page — the Conquer banner is relocated in here on load,
      followed by an IG-style lookbook (renderMotivation). -->
 <div id="motivationView" style="display:none">
   <div class="motivation-page" id="motivationContent">
     <div class="lb-wrap" id="motivBody"></div>
   </div>
+</div>
+
+<!-- Stretch page -->
+<div id="stretchView" style="display:none">
+  <div class="stretch-wrap" id="stretchContent"></div>
+</div>
+
+<!-- Yoga image lightbox -->
+<div class="yoga-lightbox" id="yogaLightbox">
+  <button class="yoga-lightbox-close" id="yogaLightboxClose">&times;</button>
+  <img id="yogaLightboxImg" src="" alt="">
 </div>
 
 <!-- Bottom nav -->
@@ -2803,14 +2956,11 @@ body { padding-bottom: 74px; }
     <button class="nav-tab" data-view="motivation" aria-label="Boost">
       <svg viewBox="0 0 24 24"><path d="M12 2C12 2 5.5 7.5 5.5 14a6.5 6.5 0 0 0 13 0c0-2.5-1.2-4.3-2.4-6 0 2.3-1.6 3.4-1.6 3.4C15 7.5 12 4 12 2z"/></svg>
     </button>
-    <button class="nav-tab" data-view="equipment" aria-label="Equipment">
-      <svg viewBox="0 0 24 24"><rect x="4.5" y="5" width="4" height="14" rx="1.8"/><rect x="15.5" y="5" width="4" height="14" rx="1.8"/><path d="M2 12h2.5M8.5 12h7M19.5 12h2.5"/></svg>
+    <button class="nav-tab" data-view="stretch" aria-label="Stretch">
+      <svg viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M3 12h3M18 12h3M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>
     </button>
     <button class="nav-tab" data-view="analytics" aria-label="History">
       <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-    </button>
-    <button class="nav-tab" data-view="chathistory" aria-label="Chat">
-      <svg viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg>
     </button>
     <button class="nav-tab" data-view="profile" aria-label="Profile">
       <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -4937,23 +5087,290 @@ function switchView(viewName) {
   // Old persisted state may still contain them; map them to the new names.
   if (viewName === "log") viewName = "home";
   else if (viewName === "progress") viewName = "analytics";
+  else if (viewName === "equipment" || viewName === "chathistory") viewName = "profile";
 
   state.currentView = viewName;
   document.querySelectorAll(".nav-tab").forEach(b => b.classList.toggle("active", b.dataset.view === viewName));
   document.getElementById("logView").style.display = viewName === "home" ? "" : "none";
   document.getElementById("progressView").style.display = viewName === "analytics" ? "" : "none";
-  document.getElementById("chatHistoryView").style.display = viewName === "chathistory" ? "" : "none";
   document.getElementById("profileView").style.display = viewName === "profile" ? "" : "none";
-  const equipEl = document.getElementById("equipmentView");
-  if (equipEl) equipEl.style.display = viewName === "equipment" ? "" : "none";
   const motivEl = document.getElementById("motivationView");
   if (motivEl) motivEl.style.display = viewName === "motivation" ? "" : "none";
+  const stretchEl = document.getElementById("stretchView");
+  if (stretchEl) stretchEl.style.display = viewName === "stretch" ? "" : "none";
   if (viewName === "motivation") renderMotivation();
-  if (viewName === "equipment") renderEquipmentView();
+  if (viewName === "stretch") renderStretchView();
   if (viewName === "analytics") renderProgressView();
-  if (viewName === "chathistory") renderChatHistory();
-  if (viewName === "profile") loadProfileIntoUI();
+  if (viewName === "profile") { loadProfileIntoUI(); renderEquipmentView(); renderChatHistory(); }
 }
+
+// === STRETCH ROUTINES ===
+const STRETCH_DATA = {
+  cardio: {
+    // Per-sport overrides; falls back to _default if a sport has no entry.
+    _default: {
+      before: [
+        { time: "0:00 - 3:00", action: "Easy jog", notes: "Straight lines only, raise core temperature. No cutting yet." },
+        { time: "3:00 - 4:00", action: "Ankle circles + calf pumps", notes: "10 per foot. Ease the Achilles into range, don't force the ends." },
+        { time: "4:00 - 5:00", action: "Leg swings + hip openers", notes: "10 per leg front-to-back, then controlled hip openers. Don't force the hip wide." },
+        { time: "5:00 - 6:00", action: "High knees + heel-to-glute", notes: "Over ~20m, easy pace. Heel-to-glute wakes the quad and front-of-knee tendon." },
+        { time: "6:00 - 7:00", action: "Nordic hamstring curls", notes: "2-3 controlled reps. Most evidence-backed exercise here for hamstring injuries. Don't skip." },
+        { time: "7:00 - 8:00", action: "Single-leg balance", notes: "30 sec per leg, progress to ball toss or looking away. Direct insurance for knee and ankle control." },
+        { time: "8:00 - 9:00", action: "Progressive calf raises", notes: "2 sets of 12. Loads the Achilles before sprint demand." },
+        { time: "9:00 - 9:45", action: "Bodyweight squats", notes: "10 reps to comfortable depth." },
+        { time: "9:45 - 11:00", action: "Pogo hops / ankle bounces", notes: "2 sets of 10, light and quick off the ground. Primes elastic tendon load, the quality that was missing when you got hurt." },
+        { time: "11:00 - 12:30", action: "Build-up runs", notes: "Stride ~60%, then ~80%. Two runs of ~30m each." },
+      ],
+      after: [
+        { time: "0:00 - 3:00", action: "Jog it down", notes: "Gradually drop the pace, don't stop dead. Eases the post-exertion pooling drop." },
+        { time: "3:00 - 4:00", action: "Cold face dip, upright", notes: "Still standing, before anything else. Parasympathetic primer that should come before you go horizontal." },
+        { time: "4:00 - 6:00", action: "Standing stretches", notes: "Calf, quad, hip flexor while you're already up. 20-30 sec each, shallow on the left knee, light on the calf if the Achilles is reactive." },
+        { time: "6:00 - 8:00", action: "Legs-up-wall", notes: "Get here and stay. Drains the ankle/Achilles swelling and shuts down the pooling early, which is what you were after." },
+        { time: "8:00 - 10:00", action: "At the wall: hamstring + figure-4", notes: "Scoot close for the hamstring (legs-up is itself a hamstring stretch); figure-4 lying on your back. No need to sit up." },
+        { time: "10:00 - 12:00", action: "At the wall: ankle mobility", notes: "Slow circles and point-flex, 10 each. Keeps that left-foot nerve spot from getting compressed." },
+        { time: "12:00 - 15:00", action: "Hydration + salt, settle", notes: "Stay down, rehydrate with salt, let HR finish settling." },
+      ],
+    },
+    Soccer: {
+      before: [
+        { time: "0:00 - 3:00", action: "Easy jog", notes: "Straight lines, raise core temp." },
+        { time: "3:00 - 4:00", action: "Ankle circles + calf pumps", notes: "10 per foot." },
+        { time: "4:00 - 5:00", action: "Leg swings + hip openers", notes: "10 per leg front-back, then controlled openers." },
+        { time: "5:00 - 6:00", action: "High knees + heel-to-glute", notes: "Over ~20m, easy pace." },
+        { time: "6:00 - 7:00", action: "Nordic hamstring curls", notes: "2-3 controlled reps. Most evidence-backed move here. Don't skip." },
+        { time: "7:00 - 8:00", action: "Single-leg balance", notes: "30 sec per leg, progress to ball toss." },
+        { time: "8:00 - 9:00", action: "Progressive calf raises", notes: "2 sets of 12. Loads the Achilles before sprint demand." },
+        { time: "9:00 - 9:45", action: "Bodyweight squats", notes: "10 reps." },
+        { time: "9:45 - 11:00", action: "Pogo hops", notes: "2 sets of 10, light and quick. Primes elastic load." },
+        { time: "11:00 - 12:30", action: "Build-up runs", notes: "Stride ~60%, then ~80%. Eases the Achilles into top speed." },
+        { time: "12:30 - 13:45", action: "Change of direction", notes: "Zig-zag at low speed, building up." },
+        { time: "13:45 - 15:00", action: "Near-full-speed sprints", notes: "A few with planting, bridge into match pace." },
+      ],
+      after: [
+        { time: "0:00 - 3:00", action: "Jog it down", notes: "Drop the pace gradually, don't stop dead." },
+        { time: "3:00 - 4:00", action: "Cold face dip, upright", notes: "Still standing, before anything else. Parasympathetic primer before going horizontal." },
+        { time: "4:00 - 6:00", action: "Standing stretches", notes: "Calf, quad, hip flexor, 20-30 sec each, while you're up." },
+        { time: "6:00 - 8:00", action: "Legs-up-wall", notes: "Get here and stay. Drains swelling, shuts down pooling early." },
+        { time: "8:00 - 10:00", action: "At the wall: hamstring + figure-4", notes: "Scoot close, figure-4 on your back. No sitting up." },
+        { time: "10:00 - 12:00", action: "At the wall: ankle mobility", notes: "Slow circles and point-flex, 10 each." },
+        { time: "12:00 - 15:00", action: "Hydration + salt, settle", notes: "Stay down, rehydrate, let HR finish settling." },
+      ],
+    },
+    Biking: {
+      before: [
+        { time: "0:00 - 1:00", action: "Ankle circles + calf pumps", notes: "Wake up the ankles before spinning." },
+        { time: "1:00 - 2:00", action: "Leg swings + bodyweight squats", notes: "Light, get the hips moving." },
+        { time: "2:00 - 3:00", action: "Bodyweight calf raises", notes: "Light. Keeps tendon frequency up even on a recovery day." },
+        { time: "3:00 - 5:00", action: "Easy spin ramp", notes: "Start low resistance, build into zone 2 gradually instead of starting cold." },
+      ],
+      after: [
+        { time: "0:00 - 2:00", action: "Easy spin-down", notes: "Drop resistance, ease cadence down, don't stop dead." },
+        { time: "2:00 - 3:30", action: "Standing calf stretch", notes: "Gentle, both knee angles, 30 sec per side." },
+        { time: "3:30 - 5:00", action: "Standing quad + hip flexor", notes: "30 sec per side." },
+        { time: "5:00 - 7:00", action: "Legs-up-wall", notes: "Drains the legs, settle HR." },
+        { time: "7:00 - 10:00", action: "Hydration + salt, settle", notes: "Stay down, rehydrate horizontal." },
+      ],
+    },
+  },
+  gym: {
+    upper: {
+      before: [
+        { time: "0:00 - 4:00", action: "Easy bike", notes: "Raises core temp, seated, POTS-friendly." },
+        { time: "4:00 - 5:00", action: "Arm circles + leg swings", notes: "10 each, full-body circulation." },
+        { time: "5:00 - 6:00", action: "Ankle circles + calf pumps + light calf raises", notes: "Keeps the lower tendons primed even on a non-leg day." },
+        { time: "6:00 - 7:00", action: "Band pull-aparts", notes: "15 reps." },
+        { time: "7:00 - 8:00", action: "Shoulder pass-throughs", notes: "Band or stick, 10 reps, easy range." },
+        { time: "8:00 - 9:00", action: "Band external rotations", notes: "12 per arm, rotator cuff." },
+        { time: "9:00 - 10:00", action: "Scapular push-ups + cat-cow", notes: "Scap control and thoracic spine for pressing." },
+        { time: "10:00 - 11:00", action: "Thoracic rotations", notes: "Opens the t-spine for overhead and pressing." },
+        { time: "11:00+", action: "Ramp-up sets on first lift", notes: "2-3 progressively heavier sets. The most important warmup of all." },
+      ],
+      after: [
+        { time: "0:00 - 1:30", action: "Bike wind-down", notes: "Gradual HR drop, don't stop dead." },
+        { time: "1:30 - 3:00", action: "Heavy slow calf raises", notes: "Straight-knee then bent-knee, 1 set each, 3 sec up / 3 sec down. Keeps tendon loading frequent on a non-leg day." },
+        { time: "3:00 - 4:00", action: "Single-leg balance", notes: "30 sec per leg. Cheap knee and ankle control." },
+        { time: "4:00 - 6:00", action: "Doorway / chest stretch, standing", notes: "30 sec per side." },
+        { time: "6:00 - 7:30", action: "Overhead lat + triceps, standing", notes: "30 sec per side." },
+        { time: "7:30 - 9:00", action: "Cross-body shoulder, standing", notes: "30 sec per side, last standing move." },
+        { time: "9:00 - 10:30", action: "Seated neck + upper trap", notes: "Gentle, 30 sec per side. First seated level." },
+        { time: "10:30 - 12:00", action: "Seated thoracic twist", notes: "30 sec per side." },
+        { time: "12:00 - 13:00", action: "Child's pose", notes: "On the floor, holding the descent." },
+        { time: "13:00 - 15:00", action: "Legs-up-wall + salt/hydration", notes: "Final position, settle HR, rehydrate horizontal." },
+      ],
+    },
+    lower: {
+      before: [
+        { time: "0:00 - 5:00", action: "Easy bike", notes: "Raises core temp, seated." },
+        { time: "5:00 - 6:00", action: "Ankle circles + calf pumps", notes: "10 circles each way, 15 point-flex per foot." },
+        { time: "6:00 - 7:00", action: "Leg swings, front-back + lateral", notes: "10 each direction per leg." },
+        { time: "7:00 - 8:00", action: "World's greatest stretch / walking lunges", notes: "5 per side. Dynamic hip, hamstring, ankle opener." },
+        { time: "8:00 - 9:00", action: "Bodyweight calf raises", notes: "2 sets of 12, building range." },
+        { time: "9:00 - 10:00", action: "Bodyweight squats, full depth", notes: "10-15 reps." },
+        { time: "10:00 - 11:00", action: "Pogo hops", notes: "2 sets of 10, springy and quick. Primes elastic tendon load before heavy work." },
+        { time: "11:00+", action: "Ramp-up sets on first big lift", notes: "2-3 progressively heavier sets." },
+      ],
+      after: [
+        { time: "0:00 - 1:30", action: "Bike wind-down", notes: "Gradual HR drop, don't stop dead." },
+        { time: "1:30 - 3:30", action: "Heavy slow calf raises", notes: "Straight-knee then bent-knee, 2 sets total, 3 sec up / 3 sec down. The main prevention lever, done while warm." },
+        { time: "3:30 - 4:30", action: "Single-leg balance", notes: "30 sec per leg. Deceleration and ankle control." },
+        { time: "4:30 - 6:00", action: "Standing calf stretch", notes: "30 sec per side, both straight-knee and bent-knee." },
+        { time: "6:00 - 7:30", action: "Standing quad + hip flexor", notes: "30 sec per side." },
+        { time: "7:30 - 9:00", action: "Standing hamstring", notes: "30 sec per side, last standing move." },
+        { time: "9:00 - 10:30", action: "Seated hamstring + figure-4 glute", notes: "First seated level." },
+        { time: "10:30 - 12:00", action: "Pigeon / deep hip", notes: "30-60 sec per side." },
+        { time: "12:00 - 13:00", action: "Lying spinal twist", notes: "30 sec per side, on the floor." },
+        { time: "13:00 - 15:00", action: "Legs-up-wall + salt/hydration", notes: "Final position, drains the legs, settle HR, rehydrate horizontal." },
+      ],
+    },
+  },
+  yoga: [
+    { time: "0:00 - 1:00", action: "Cat-Cow", notes: "8 slow reps. Inhale arch, exhale round. 4 seconds each direction, one vertebra at a time.", img: "/yoga/cat-cow.jpg" },
+    { time: "1:00 - 2:30", action: "Thread the Needle", notes: "5 reps/side, 3-sec hold each. Reach arm under and across, shoulder drops to floor. Thoracic rotation for pressing and soccer turning.", img: "/yoga/thread-the-needle.jpg" },
+    { time: "2:30 - 4:00", action: "Supine Spinal Twist", notes: "30 sec/side. Knees stacked, drop to one side. Opposite shoulder glued to floor. Look away from knees. Gravity does the work.", img: "/yoga/supine-spinal-twist.jpg" },
+    { time: "4:00 - 6:00", action: "Half-Kneeling Hip Flexor Stretch", notes: "45 sec/side. Back knee on mat, squeeze back-leg glute. Stay tall, posterior pelvic tilt. Stretch comes from the tilt, not lunging forward.", img: "/yoga/hip-flexor.jpg" },
+    { time: "6:00 - 8:00", action: "90/90 Hip Stretch", notes: "30 sec/side + 5 transitions. Both knees at 90 degrees, sit tall. Opens internal and external rotation. Protects knees during soccer cutting, helps squat depth.", img: "/yoga/90-90-hip.jpg" },
+    { time: "8:00 - 10:00", action: "Supine Figure-4", notes: "45 sec/side. Ankle over opposite knee, pull bottom leg to chest. Head stays on mat. Hits deep external rotators (piriformis) tight from squats and sitting.", img: "/yoga/figure-4.jpg" },
+    { time: "10:00 - 11:30", action: "Pec Stretch", notes: "30 sec/side at 2 angles. Forearm on wall/doorframe at 90 degrees, lean away. Elbow at shoulder height (mid pec), then above (upper pec). Alt: supine floor angel.", img: "/yoga/pec-stretch.jpg" },
+    { time: "11:30 - 13:00", action: "Sleeper Stretch", notes: "30 sec/side. Lie on side, bottom arm out at 90, elbow bent 90. Gently press back of hand toward floor. THE stretch for shoulder internal rotation. Go gently.", img: "/yoga/sleeper-stretch.jpg" },
+    { time: "13:00 - 14:00", action: "Cross-Body Shoulder + Behind-Back Reach", notes: "20 sec each arm both directions. Pull arm across chest. Then reach over shoulder / behind low back, try to touch fingertips (towel to bridge gap).", img: "/yoga/cross-body-shoulder.jpg" },
+    { time: "14:00 - 15:30", action: "Supine Hamstring Stretch", notes: "30 sec/leg. Loop towel around foot, straighten leg toward ceiling. Other leg flat on floor. Find the stretch where you can still breathe normally.", img: "/yoga/hamstring-stretch.jpg" },
+    { time: "15:30 - 17:00", action: "Child's Pose with Reach", notes: "60 sec. Knees wide, hips back, hands forward. Walk hands left 20 sec, center 20 sec, right 20 sec. Breathe 4-sec inhale, 6-sec exhale (parasympathetic activation).", img: "/yoga/childs-pose.jpg" },
+    { time: "17:00 - 18:00", action: "Legs Up the Wall", notes: "60 sec. Butt against wall, legs straight up, arms relaxed. Best POTS recovery position. Returns pooled blood to core. Continue 4:6 breathing, close eyes.", img: "/yoga/legs-up-wall.jpg" },
+  ],
+};
+
+// Stretch sub-categories for cardio
+const CARDIO_SUBTYPES = ["Soccer", "Swimming", "Biking", "Other"];
+
+let stretchState = { type: "gym", gymSplit: "upper", cardioSub: "Soccer", timing: "before" };
+const STRETCH_TYPES = ["gym", "cardio", "yoga"];
+
+function renderStretchView() {
+  const el = document.getElementById("stretchContent");
+
+  // Determine which routine to show
+  let routine = [];
+  if (stretchState.type === "cardio") {
+    const sport = stretchState.cardioSub;
+    const sportData = STRETCH_DATA.cardio[sport] || STRETCH_DATA.cardio._default;
+    routine = (sportData && sportData[stretchState.timing]) || [];
+  } else if (stretchState.type === "yoga") {
+    routine = STRETCH_DATA.yoga || [];
+  } else {
+    const split = stretchState.gymSplit;
+    routine = (STRETCH_DATA.gym[split] && STRETCH_DATA.gym[split][stretchState.timing]) || [];
+  }
+
+  // Build toggle HTML
+  // Row 1: Gym / Cardio / Yoga
+  const typeIdx = STRETCH_TYPES.indexOf(stretchState.type);
+  let html = `<div class="page-title" style="text-align:center;margin-top:4px">Stretch</div>`;
+
+  // Type toggle (Gym / Cardio / Yoga)
+  html += `<div class="stretch-toggle cols-3" id="stretchTypeToggle">
+    <div class="stretch-toggle-thumb" style="transform:translateX(${typeIdx * 100}%)"></div>
+    <button class="${stretchState.type === 'gym' ? 'active' : ''}" data-val="gym">Gym</button>
+    <button class="${stretchState.type === 'cardio' ? 'active' : ''}" data-val="cardio">Cardio</button>
+    <button class="${stretchState.type === 'yoga' ? 'active' : ''}" data-val="yoga">Yoga</button>
+  </div>`;
+
+  // Row 2: sub-toggle (Upper/Lower for gym, sport for cardio, none for yoga)
+  if (stretchState.type === "gym") {
+    const splitIdx = stretchState.gymSplit === "upper" ? 0 : 1;
+    html += `<div class="stretch-toggle secondary cols-2" id="stretchSplitToggle">
+      <div class="stretch-toggle-thumb" style="transform:translateX(${splitIdx * 100}%)"></div>
+      <button class="${stretchState.gymSplit === 'upper' ? 'active' : ''}" data-val="upper">Upper</button>
+      <button class="${stretchState.gymSplit === 'lower' ? 'active' : ''}" data-val="lower">Lower</button>
+    </div>`;
+  } else if (stretchState.type === "cardio") {
+    const subIdx = CARDIO_SUBTYPES.indexOf(stretchState.cardioSub);
+    html += `<div class="stretch-toggle secondary cols-4" id="stretchSubToggle">
+      <div class="stretch-toggle-thumb" style="transform:translateX(${subIdx * 100}%)"></div>
+      ${CARDIO_SUBTYPES.map(s => `<button class="${stretchState.cardioSub === s ? 'active' : ''}" data-val="${s}">${s}</button>`).join("")}
+    </div>`;
+  }
+
+  // Row 3: Before / After (hidden for yoga — single routine)
+  if (stretchState.type !== "yoga") {
+    const timingIdx = stretchState.timing === "before" ? 0 : 1;
+    html += `<div class="stretch-toggle secondary cols-2" id="stretchTimingToggle">
+      <div class="stretch-toggle-thumb" style="transform:translateX(${timingIdx * 100}%)"></div>
+      <button class="${stretchState.timing === 'before' ? 'active' : ''}" data-val="before">Before</button>
+      <button class="${stretchState.timing === 'after' ? 'active' : ''}" data-val="after">After</button>
+    </div>`;
+  }
+
+  // Timeline / cards
+  if (routine.length === 0) {
+    html += `<div class="stretch-empty">Routine coming soon</div>`;
+  } else if (stretchState.type === "yoga") {
+    routine.forEach(r => {
+      html += `<div class="yoga-card">`;
+      if (r.img) html += `<div class="yoga-card-img" data-src="${r.img}"><img src="${r.img}" alt="${r.action}" loading="lazy"></div>`;
+      html += `<div class="yoga-card-body"><div class="yoga-card-time">${r.time}</div><div class="yoga-card-action">${r.action}</div><div class="yoga-card-notes">${r.notes}</div></div></div>`;
+    });
+  } else {
+    html += `<table class="stretch-timeline"><thead><tr><th>Time</th><th>Action</th><th>Notes</th></tr></thead><tbody>`;
+    routine.forEach(r => {
+      html += `<tr><td>${r.time}</td><td>${r.action}</td><td>${r.notes}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+  }
+
+  el.innerHTML = html;
+
+  // Wire toggles
+  document.getElementById("stretchTypeToggle")?.addEventListener("click", e => {
+    const btn = e.target.closest("button");
+    if (!btn || btn.dataset.val === stretchState.type) return;
+    stretchState.type = btn.dataset.val;
+    renderStretchView();
+  });
+
+  const splitToggle = document.getElementById("stretchSplitToggle");
+  if (splitToggle) splitToggle.addEventListener("click", e => {
+    const btn = e.target.closest("button");
+    if (!btn || btn.dataset.val === stretchState.gymSplit) return;
+    stretchState.gymSplit = btn.dataset.val;
+    renderStretchView();
+  });
+
+  const subToggle = document.getElementById("stretchSubToggle");
+  if (subToggle) subToggle.addEventListener("click", e => {
+    const btn = e.target.closest("button");
+    if (!btn || btn.dataset.val === stretchState.cardioSub) return;
+    stretchState.cardioSub = btn.dataset.val;
+    renderStretchView();
+  });
+
+  document.getElementById("stretchTimingToggle")?.addEventListener("click", e => {
+    const btn = e.target.closest("button");
+    if (!btn || btn.dataset.val === stretchState.timing) return;
+    stretchState.timing = btn.dataset.val;
+    renderStretchView();
+  });
+
+  // Yoga image lightbox
+  el.querySelectorAll(".yoga-card-img").forEach(imgWrap => {
+    imgWrap.addEventListener("click", () => {
+      const src = imgWrap.dataset.src;
+      if (!src) return;
+      const lb = document.getElementById("yogaLightbox");
+      document.getElementById("yogaLightboxImg").src = src;
+      lb.classList.add("open");
+    });
+  });
+}
+
+// Lightbox close handlers (wired once on init)
+document.getElementById("yogaLightbox")?.addEventListener("click", e => {
+  if (e.target === e.currentTarget || e.target.id === "yogaLightboxClose") {
+    document.getElementById("yogaLightbox").classList.remove("open");
+  }
+});
+document.getElementById("yogaLightboxClose")?.addEventListener("click", () => {
+  document.getElementById("yogaLightbox").classList.remove("open");
+});
 
 // All equipment at the gym, split into the three toggle groups, each by muscle.
 // Drop a photo at equipment/<slug>.jpg (slug = lowercased, dashed name) and it
@@ -4990,8 +5407,7 @@ function renderEquipmentView() {
   const el = document.getElementById("equipContent");
   if (!el) return;
   const ti = Math.max(0, EQUIP_GROUPS.indexOf(equipGroup));
-  let html = '<h1 class="page-title" style="text-align:center">Equipment</h1>';
-  html += '<div class="equip-toggle"><div class="equip-toggle-thumb" style="--ti:' + ti + '"></div>';
+  let html = '<div class="equip-toggle"><div class="equip-toggle-thumb" style="--ti:' + ti + '"></div>';
   html += EQUIP_GROUPS.map((g, i) =>
     '<button data-group="' + g + '" data-i="' + i + '"' + (g === equipGroup ? ' class="active"' : '') + '>' + g + '</button>'
   ).join('') + '</div>';
@@ -6127,21 +6543,21 @@ function relocateHeroToMotivation() {
 // Each tile: { src } for a still, or { src, link } for a video — clicking a tile
 // with a link opens that Instagram page; a still opens the full image viewer.
 const MOTIV_IMAGES = [
-  { src: "motivation/1.jpg" },
-  { src: "motivation/2.jpg" },
-  { src: "motivation/3.jpg" },
-  { src: "motivation/4.jpg" },
-  { src: "motivation/5.jpg" },
-  { src: "motivation/6.jpg", link: "instagram://media?shortcode=DKKatSANg-j", web: "https://www.instagram.com/p/DKKatSANg-j/" },
-  { src: "motivation/7.jpg" },
-  { src: "motivation/8.jpg" },
-  { src: "motivation/9.jpg" },
-  { src: "motivation/10.jpg" },
-  { src: "motivation/11.jpg" },
-  { src: "motivation/12.jpg", link: "instagram://media?shortcode=BtgQx3SBmvr", web: "https://www.instagram.com/p/BtgQx3SBmvr/" },
-  { src: "motivation/13.jpg" },
-  { src: "motivation/14.jpg" },
-  { src: "motivation/15.jpg" },
+  { src: "motivation/1.jfif" },
+  { src: "motivation/2.jfif" },
+  { src: "motivation/3.jfif" },
+  { src: "motivation/4.jfif" },
+  { src: "motivation/5.jfif" },
+  { src: "motivation/6.jfif", link: "instagram://media?shortcode=DKKatSANg-j", web: "https://www.instagram.com/p/DKKatSANg-j/" },
+  { src: "motivation/7.jfif" },
+  { src: "motivation/8.jfif" },
+  { src: "motivation/9.jfif" },
+  { src: "motivation/10.jfif" },
+  { src: "motivation/11.jfif" },
+  { src: "motivation/12.jfif", link: "instagram://media?shortcode=BtgQx3SBmvr", web: "https://www.instagram.com/p/BtgQx3SBmvr/" },
+  { src: "motivation/13.jfif" },
+  { src: "motivation/14.jfif" },
+  { src: "motivation/15.jfif" },
 ];
 const MOTIV_KEY = "gym_motivation_v1";
 let motivItems = [];
@@ -6153,15 +6569,15 @@ let __motivFromRemote = false;
 // === MOTIVATION MUSIC ===
 // Drop .mp3 files into /music and album art into /music/art/ (JPG, same base name).
 const MOTIV_TRACKS = [
-  { label: "ET - You Don't Believe", src: "music/et-you-dont-believe.mp3", art: "music/art/et-you-dont-believe.jpg" },
-  { label: "ET - Execution is Worshipped", src: "music/et-execution-is-worshipped.mp3", art: "music/art/et-execution-is-worshipped.jpg" },
-  { label: "ET - We On Fire", src: "music/et-we-on-fire.mp3", art: "music/art/et-we-on-fire.jpg" },
-  { label: "ET - I'm On Everything", src: "music/et-im-on-everything.mp3", art: "music/art/et-im-on-everything.jpg" },
-  { label: "ET - 8 Pack", src: "music/et-8-pack.mp3", art: "music/art/et-8-pack.jpg" },
-  { label: "310babii - bad", src: "music/310babii-bad.mp3", art: "music/art/310babii-bad.jpg" },
-  { label: "Nipsey Hussle - Hussle & Motivate", src: "music/nipsey-hussle-hussle-and-motivate.mp3", art: "music/art/nipsey-hussle-hussle-and-motivate.jpg" },
-  { label: "A$AP Rocky - Tailor Swif", src: "music/asap-rocky-tailor-swif.mp3", art: "music/art/asap-rocky-tailor-swif.jpg" },
-  { label: "French Montana - Ever Since U Left Me", src: "music/french-montana-ever-since-u-left-me.mp3", art: "music/art/french-montana-ever-since-u-left-me.jpg" },
+  { label: "ET - You Don't Believe", src: "music/et-you-dont-believe.mp3", art: "music/art/et-you-dont-believe.jfif" },
+  { label: "ET - Execution is Worshipped", src: "music/et-execution-is-worshipped.mp3", art: "music/art/et-execution-is-worshipped.jfif" },
+  { label: "ET - We On Fire", src: "music/et-we-on-fire.mp3", art: "music/art/et-we-on-fire.jfif" },
+  { label: "ET - I'm On Everything", src: "music/et-im-on-everything.mp3", art: "music/art/et-im-on-everything.jfif" },
+  { label: "ET - 8 Pack", src: "music/et-8-pack.mp3", art: "music/art/et-8-pack.jfif" },
+  { label: "310babii - bad", src: "music/310babii-bad.mp3", art: "music/art/310babii-bad.jfif" },
+  { label: "Nipsey Hussle - Hussle & Motivate", src: "music/nipsey-hussle-hussle-and-motivate.mp3", art: "music/art/nipsey-hussle-hussle-and-motivate.jfif" },
+  { label: "A$AP Rocky - Tailor Swif", src: "music/asap-rocky-tailor-swif.mp3", art: "music/art/asap-rocky-tailor-swif.jfif" },
+  { label: "French Montana - Ever Since U Left Me", src: "music/french-montana-ever-since-u-left-me.mp3", art: "music/art/french-montana-ever-since-u-left-me.jfif" },
 ];
 const MUSIC_NOTE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
 const MUSIC_PAUSE_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
