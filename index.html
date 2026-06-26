@@ -77,9 +77,9 @@ body {
 /* === MOTIVATION LOOKBOOK (IG-style grid) === */
 .motivation-page { max-width: 680px; margin: 0 auto; }
 .lb-wrap { padding: 0; }
-.lb-toolbar { position: relative; text-align: center; margin: 62px 14px 26px; }
-.lb-toolbar .page-title { margin: 0 0 22px; text-align: center; }
-.lb-actions { position: relative; display: inline-flex; gap: 8px; z-index: 50; }
+.lb-toolbar { position: relative; text-align: center; margin: 62px 14px 36px; }
+.lb-toolbar .page-title { margin: 0 0 40px; text-align: center; }
+.lb-actions { position: relative; display: inline-flex; gap: 8px; z-index: 50; margin-bottom: 12px; }
 .lb-music-menu {
   position: absolute; top: calc(100% + 8px); right: 0; z-index: 30;
   width: 260px; max-height: 62vh; overflow-y: auto;
@@ -1871,13 +1871,13 @@ body { padding-bottom: 74px; }
 
 /* Segmented toggle — reuses equip-toggle shape but scoped to stretch */
 .stretch-toggle {
-  position: relative; display: flex; margin: 0 auto 18px;
+  position: relative; display: flex;
   background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-emphasis);
   border-radius: 999px; padding: 4px;
 }
 .stretch-toggle.cols-2 { max-width: 240px; }
 .stretch-toggle.cols-2 .stretch-toggle-thumb { width: calc((100% - 8px) / 2); }
-.stretch-toggle.cols-3 { max-width: 320px; }
+.stretch-toggle.cols-3 { }
 .stretch-toggle.cols-3 .stretch-toggle-thumb { width: calc((100% - 8px) / 3); }
 .stretch-toggle.cols-4 { max-width: 380px; }
 .stretch-toggle.cols-4 .stretch-toggle-thumb { width: calc((100% - 8px) / 4); }
@@ -1898,23 +1898,59 @@ body { padding-bottom: 74px; }
 
 /* Secondary toggles — smaller, outline-only accent */
 .stretch-toggle.secondary {
-  padding: 3px; margin-bottom: 12px;
+  padding: 4px;
   background: transparent; border-color: rgba(166, 173, 184, 0.12);
+  border-radius: 999px;
+  margin-top: 6px;
 }
 .stretch-toggle.secondary .stretch-toggle-thumb {
-  background: transparent;
-  border: 1.5px solid var(--green);
-  top: 3px; bottom: 3px; left: 3px;
+  background: rgba(196, 224, 79, 0.5);
+  border: none;
+  top: 4px; bottom: 4px; left: 4px;
+  border-radius: 999px;
 }
-.stretch-toggle.secondary.cols-2 { max-width: 200px; }
-.stretch-toggle.secondary.cols-2 .stretch-toggle-thumb { width: calc((100% - 6px) / 2); }
-.stretch-toggle.secondary.cols-4 { max-width: 340px; }
+.stretch-toggle.tertiary .stretch-toggle-thumb {
+  background: rgba(196, 224, 79, 0.25);
+}
+.stretch-toggle.secondary.cols-2 { width: 100%; max-width: none; }
+.stretch-toggle.secondary.cols-2 .stretch-toggle-thumb { width: calc((100% - 8px) / 2); }
+.stretch-toggle.secondary.cols-4 { width: 100%; max-width: none; }
 .stretch-toggle.secondary.cols-4 .stretch-toggle-thumb { width: calc((100% - 6px) / 4); }
 .stretch-toggle.secondary button {
-  font-size: 13px; font-weight: 600; padding: 6px 0;
-  color: var(--text-muted); letter-spacing: 0.05em;
+  font-size: 13px; font-weight: 700; padding: 7px 0;
+  color: var(--text-muted); letter-spacing: 0.04em;
 }
-.stretch-toggle.secondary button.active { color: var(--green); }
+.stretch-toggle.secondary button.active { color: #0F0F0F; }
+.stretch-toggle.tertiary button.active { color: #e8e8e8; }
+
+/* Toggle stack — primary + sub-toggles grouped together */
+.stretch-toggle-stack {
+  display: flex; flex-direction: column; align-items: stretch;
+  gap: 0; margin: 0 auto 22px;
+  width: 100%;
+}
+
+/* Sub-toggle slide-down animation */
+#stretchSubContainer {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 300ms var(--ease-smooth), opacity 300ms ease;
+  opacity: 0;
+}
+#stretchSubContainer.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+#stretchSubContainer > * {
+  overflow: hidden;
+  display: flex; flex-direction: column; gap: 6px;
+}
+
+/* Content area transition */
+.stretch-content-area {
+  transition: opacity 180ms ease;
+}
+.stretch-content-area.fading { opacity: 0; }
 
 /* Timeline table */
 .stretch-timeline {
@@ -5245,64 +5281,26 @@ const CARDIO_SUBTYPES = ["Soccer", "Swimming", "Biking", "Other"];
 let stretchState = { type: "gym", gymSplit: "upper", cardioSub: "Soccer", timing: "before" };
 const STRETCH_TYPES = ["gym", "cardio", "yoga"];
 
-function renderStretchView() {
-  const el = document.getElementById("stretchContent");
-
-  // Determine which routine to show
-  let routine = [];
+function getStretchRoutine() {
   if (stretchState.type === "cardio") {
     const sport = stretchState.cardioSub;
     const sportData = STRETCH_DATA.cardio[sport] || STRETCH_DATA.cardio._default;
-    routine = (sportData && sportData[stretchState.timing]) || [];
+    return (sportData && sportData[stretchState.timing]) || [];
   } else if (stretchState.type === "yoga") {
-    routine = STRETCH_DATA.yoga || [];
+    return STRETCH_DATA.yoga || [];
   } else {
     const split = stretchState.gymSplit;
-    routine = (STRETCH_DATA.gym[split] && STRETCH_DATA.gym[split][stretchState.timing]) || [];
+    return (STRETCH_DATA.gym[split] && STRETCH_DATA.gym[split][stretchState.timing]) || [];
   }
+}
 
-  // Build toggle HTML
-  // Row 1: Gym / Cardio / Yoga
-  const typeIdx = STRETCH_TYPES.indexOf(stretchState.type);
-  let html = `<div class="page-title" style="text-align:center;margin-top:4px">Stretch</div>`;
-
-  // Type toggle (Gym / Cardio / Yoga)
-  html += `<div class="stretch-toggle cols-3" id="stretchTypeToggle">
-    <div class="stretch-toggle-thumb" style="transform:translateX(${typeIdx * 100}%)"></div>
-    <button class="${stretchState.type === 'gym' ? 'active' : ''}" data-val="gym">Gym</button>
-    <button class="${stretchState.type === 'cardio' ? 'active' : ''}" data-val="cardio">Cardio</button>
-    <button class="${stretchState.type === 'yoga' ? 'active' : ''}" data-val="yoga">Yoga</button>
-  </div>`;
-
-  // Row 2: sub-toggle (Upper/Lower for gym, sport for cardio, none for yoga)
-  if (stretchState.type === "gym") {
-    const splitIdx = stretchState.gymSplit === "upper" ? 0 : 1;
-    html += `<div class="stretch-toggle secondary cols-2" id="stretchSplitToggle">
-      <div class="stretch-toggle-thumb" style="transform:translateX(${splitIdx * 100}%)"></div>
-      <button class="${stretchState.gymSplit === 'upper' ? 'active' : ''}" data-val="upper">Upper</button>
-      <button class="${stretchState.gymSplit === 'lower' ? 'active' : ''}" data-val="lower">Lower</button>
-    </div>`;
-  } else if (stretchState.type === "cardio") {
-    const subIdx = CARDIO_SUBTYPES.indexOf(stretchState.cardioSub);
-    html += `<div class="stretch-toggle secondary cols-4" id="stretchSubToggle">
-      <div class="stretch-toggle-thumb" style="transform:translateX(${subIdx * 100}%)"></div>
-      ${CARDIO_SUBTYPES.map(s => `<button class="${stretchState.cardioSub === s ? 'active' : ''}" data-val="${s}">${s}</button>`).join("")}
-    </div>`;
-  }
-
-  // Row 3: Before / After (hidden for yoga — single routine)
-  if (stretchState.type !== "yoga") {
-    const timingIdx = stretchState.timing === "before" ? 0 : 1;
-    html += `<div class="stretch-toggle secondary cols-2" id="stretchTimingToggle">
-      <div class="stretch-toggle-thumb" style="transform:translateX(${timingIdx * 100}%)"></div>
-      <button class="${stretchState.timing === 'before' ? 'active' : ''}" data-val="before">Before</button>
-      <button class="${stretchState.timing === 'after' ? 'active' : ''}" data-val="after">After</button>
-    </div>`;
-  }
-
-  // Timeline / cards
+function renderStretchContent() {
+  const area = document.getElementById("stretchContentArea");
+  if (!area) return;
+  const routine = getStretchRoutine();
+  let html = "";
   if (routine.length === 0) {
-    html += `<div class="stretch-empty">Routine coming soon</div>`;
+    html = `<div class="stretch-empty">Routine coming soon</div>`;
   } else if (stretchState.type === "yoga") {
     routine.forEach(r => {
       html += `<div class="yoga-card">`;
@@ -5310,56 +5308,151 @@ function renderStretchView() {
       html += `<div class="yoga-card-body"><div class="yoga-card-time">${r.time}</div><div class="yoga-card-action">${r.action}</div><div class="yoga-card-notes">${r.notes}</div></div></div>`;
     });
   } else {
-    html += `<table class="stretch-timeline"><thead><tr><th>Time</th><th>Action</th><th>Notes</th></tr></thead><tbody>`;
+    html = `<table class="stretch-timeline"><thead><tr><th>Time</th><th>Action</th><th>Notes</th></tr></thead><tbody>`;
     routine.forEach(r => {
       html += `<tr><td>${r.time}</td><td>${r.action}</td><td>${r.notes}</td></tr>`;
     });
     html += `</tbody></table>`;
   }
+  // Fade out, swap, fade in
+  area.classList.add("fading");
+  setTimeout(() => {
+    area.innerHTML = html;
+    area.classList.remove("fading");
+    // Wire yoga lightbox
+    area.querySelectorAll(".yoga-card-img").forEach(imgWrap => {
+      imgWrap.addEventListener("click", () => {
+        const src = imgWrap.dataset.src;
+        if (!src) return;
+        document.getElementById("yogaLightboxImg").src = src;
+        document.getElementById("yogaLightbox").classList.add("open");
+      });
+    });
+  }, 180);
+}
 
-  el.innerHTML = html;
+function renderStretchSubToggles() {
+  const container = document.getElementById("stretchSubContainer");
+  if (!container) return;
+  const stack = container.closest(".stretch-toggle-stack");
+  const needsSub = stretchState.type === "gym" || stretchState.type === "cardio";
 
-  // Wire toggles
-  document.getElementById("stretchTypeToggle")?.addEventListener("click", e => {
-    const btn = e.target.closest("button");
-    if (!btn || btn.dataset.val === stretchState.type) return;
-    stretchState.type = btn.dataset.val;
-    renderStretchView();
-  });
+  if (!needsSub) {
+    // Animate closed
+    container.classList.remove("open");
+    if (stack) stack.classList.remove("has-sub");
+    setTimeout(() => { container.innerHTML = ""; }, 300);
+    return;
+  }
 
+  const timingIdx = stretchState.timing === "before" ? 0 : 1;
+  const timingHtml = `<div class="stretch-toggle secondary tertiary cols-2" id="stretchTimingToggle">
+    <div class="stretch-toggle-thumb" style="transform:translateX(${timingIdx * 100}%)"></div>
+    <button class="${stretchState.timing === 'before' ? 'active' : ''}" data-val="before">Before</button>
+    <button class="${stretchState.timing === 'after' ? 'active' : ''}" data-val="after">After</button>
+  </div>`;
+
+  let subHtml = "";
+  if (stretchState.type === "gym") {
+    const splitIdx = stretchState.gymSplit === "upper" ? 0 : 1;
+    subHtml = `<div>
+      <div class="stretch-toggle secondary cols-2" id="stretchSplitToggle">
+        <div class="stretch-toggle-thumb" style="transform:translateX(${splitIdx * 100}%)"></div>
+        <button class="${stretchState.gymSplit === 'upper' ? 'active' : ''}" data-val="upper">Upper</button>
+        <button class="${stretchState.gymSplit === 'lower' ? 'active' : ''}" data-val="lower">Lower</button>
+      </div>
+      ${timingHtml}
+    </div>`;
+  } else if (stretchState.type === "cardio") {
+    const subIdx = CARDIO_SUBTYPES.indexOf(stretchState.cardioSub);
+    subHtml = `<div>
+      <div class="stretch-toggle secondary cols-${CARDIO_SUBTYPES.length}" id="stretchSubToggle">
+        <div class="stretch-toggle-thumb" style="transform:translateX(${subIdx * 100}%)"></div>
+        ${CARDIO_SUBTYPES.map(s => `<button class="${stretchState.cardioSub === s ? 'active' : ''}" data-val="${s}">${s}</button>`).join("")}
+      </div>
+      ${timingHtml}
+    </div>`;
+  }
+  container.innerHTML = subHtml;
+  // Force reflow then animate open
+  container.offsetHeight;
+  container.classList.add("open");
+  if (stack) stack.classList.add("has-sub");
+  wireStretchSubToggles();
+}
+
+function wireStretchSubToggles() {
   const splitToggle = document.getElementById("stretchSplitToggle");
   if (splitToggle) splitToggle.addEventListener("click", e => {
     const btn = e.target.closest("button");
     if (!btn || btn.dataset.val === stretchState.gymSplit) return;
+    // Slide thumb
+    const thumb = splitToggle.querySelector(".stretch-toggle-thumb");
+    const idx = btn.dataset.val === "upper" ? 0 : 1;
+    thumb.style.transform = `translateX(${idx * 100}%)`;
+    splitToggle.querySelectorAll("button").forEach(b => b.classList.toggle("active", b === btn));
     stretchState.gymSplit = btn.dataset.val;
-    renderStretchView();
+    renderStretchContent();
   });
 
   const subToggle = document.getElementById("stretchSubToggle");
   if (subToggle) subToggle.addEventListener("click", e => {
     const btn = e.target.closest("button");
     if (!btn || btn.dataset.val === stretchState.cardioSub) return;
+    const thumb = subToggle.querySelector(".stretch-toggle-thumb");
+    const idx = CARDIO_SUBTYPES.indexOf(btn.dataset.val);
+    thumb.style.transform = `translateX(${idx * 100}%)`;
+    subToggle.querySelectorAll("button").forEach(b => b.classList.toggle("active", b === btn));
     stretchState.cardioSub = btn.dataset.val;
-    renderStretchView();
+    renderStretchContent();
   });
 
-  document.getElementById("stretchTimingToggle")?.addEventListener("click", e => {
+  const timingToggle = document.getElementById("stretchTimingToggle");
+  if (timingToggle) timingToggle.addEventListener("click", e => {
     const btn = e.target.closest("button");
     if (!btn || btn.dataset.val === stretchState.timing) return;
+    const thumb = timingToggle.querySelector(".stretch-toggle-thumb");
+    const idx = btn.dataset.val === "before" ? 0 : 1;
+    thumb.style.transform = `translateX(${idx * 100}%)`;
+    timingToggle.querySelectorAll("button").forEach(b => b.classList.toggle("active", b === btn));
     stretchState.timing = btn.dataset.val;
-    renderStretchView();
+    renderStretchContent();
+  });
+}
+
+function renderStretchView() {
+  const el = document.getElementById("stretchContent");
+  const typeIdx = STRETCH_TYPES.indexOf(stretchState.type);
+
+  let html = `<div class="page-title" style="text-align:center;margin-top:4px">Stretch</div>`;
+  html += `<div class="stretch-toggle-stack">`;
+  html += `<div class="stretch-toggle cols-3" id="stretchTypeToggle">
+    <div class="stretch-toggle-thumb" style="transform:translateX(${typeIdx * 100}%)"></div>
+    <button class="${stretchState.type === 'gym' ? 'active' : ''}" data-val="gym">Gym</button>
+    <button class="${stretchState.type === 'cardio' ? 'active' : ''}" data-val="cardio">Cardio</button>
+    <button class="${stretchState.type === 'yoga' ? 'active' : ''}" data-val="yoga">Yoga</button>
+  </div>`;
+  html += `<div id="stretchSubContainer"></div>`;
+  html += `</div>`;
+  html += `<div class="stretch-content-area" id="stretchContentArea"></div>`;
+
+  el.innerHTML = html;
+
+  // Wire primary toggle — slides thumb, then rebuilds sub-toggles + content
+  document.getElementById("stretchTypeToggle").addEventListener("click", e => {
+    const btn = e.target.closest("button");
+    if (!btn || btn.dataset.val === stretchState.type) return;
+    const thumb = e.currentTarget.querySelector(".stretch-toggle-thumb");
+    const idx = STRETCH_TYPES.indexOf(btn.dataset.val);
+    thumb.style.transform = `translateX(${idx * 100}%)`;
+    e.currentTarget.querySelectorAll("button").forEach(b => b.classList.toggle("active", b === btn));
+    stretchState.type = btn.dataset.val;
+    renderStretchSubToggles();
+    renderStretchContent();
   });
 
-  // Yoga image lightbox
-  el.querySelectorAll(".yoga-card-img").forEach(imgWrap => {
-    imgWrap.addEventListener("click", () => {
-      const src = imgWrap.dataset.src;
-      if (!src) return;
-      const lb = document.getElementById("yogaLightbox");
-      document.getElementById("yogaLightboxImg").src = src;
-      lb.classList.add("open");
-    });
-  });
+  renderStretchSubToggles();
+  renderStretchContent();
 }
 
 // Lightbox close handlers (wired once on init)
@@ -6543,21 +6636,21 @@ function relocateHeroToMotivation() {
 // Each tile: { src } for a still, or { src, link } for a video — clicking a tile
 // with a link opens that Instagram page; a still opens the full image viewer.
 const MOTIV_IMAGES = [
-  { src: "motivation/1.jfif" },
-  { src: "motivation/2.jfif" },
-  { src: "motivation/3.jfif" },
-  { src: "motivation/4.jfif" },
-  { src: "motivation/5.jfif" },
-  { src: "motivation/6.jfif", link: "instagram://media?shortcode=DKKatSANg-j", web: "https://www.instagram.com/p/DKKatSANg-j/" },
-  { src: "motivation/7.jfif" },
-  { src: "motivation/8.jfif" },
-  { src: "motivation/9.jfif" },
-  { src: "motivation/10.jfif" },
-  { src: "motivation/11.jfif" },
-  { src: "motivation/12.jfif", link: "instagram://media?shortcode=BtgQx3SBmvr", web: "https://www.instagram.com/p/BtgQx3SBmvr/" },
-  { src: "motivation/13.jfif" },
-  { src: "motivation/14.jfif" },
-  { src: "motivation/15.jfif" },
+  { src: "motivation/1.jpg" },
+  { src: "motivation/2.jpg" },
+  { src: "motivation/3.jpg" },
+  { src: "motivation/4.jpg" },
+  { src: "motivation/5.jpg" },
+  { src: "motivation/6.jpg", link: "instagram://media?shortcode=DKKatSANg-j", web: "https://www.instagram.com/p/DKKatSANg-j/" },
+  { src: "motivation/7.jpg" },
+  { src: "motivation/8.jpg" },
+  { src: "motivation/9.jpg" },
+  { src: "motivation/10.jpg" },
+  { src: "motivation/11.jpg" },
+  { src: "motivation/12.jpg", link: "instagram://media?shortcode=BtgQx3SBmvr", web: "https://www.instagram.com/p/BtgQx3SBmvr/" },
+  { src: "motivation/13.jpg" },
+  { src: "motivation/14.jpg" },
+  { src: "motivation/15.jpg" },
 ];
 const MOTIV_KEY = "gym_motivation_v1";
 let motivItems = [];
@@ -6569,15 +6662,15 @@ let __motivFromRemote = false;
 // === MOTIVATION MUSIC ===
 // Drop .mp3 files into /music and album art into /music/art/ (JPG, same base name).
 const MOTIV_TRACKS = [
-  { label: "ET - You Don't Believe", src: "music/et-you-dont-believe.mp3", art: "music/art/et-you-dont-believe.jfif" },
-  { label: "ET - Execution is Worshipped", src: "music/et-execution-is-worshipped.mp3", art: "music/art/et-execution-is-worshipped.jfif" },
-  { label: "ET - We On Fire", src: "music/et-we-on-fire.mp3", art: "music/art/et-we-on-fire.jfif" },
-  { label: "ET - I'm On Everything", src: "music/et-im-on-everything.mp3", art: "music/art/et-im-on-everything.jfif" },
-  { label: "ET - 8 Pack", src: "music/et-8-pack.mp3", art: "music/art/et-8-pack.jfif" },
-  { label: "310babii - bad", src: "music/310babii-bad.mp3", art: "music/art/310babii-bad.jfif" },
-  { label: "Nipsey Hussle - Hussle & Motivate", src: "music/nipsey-hussle-hussle-and-motivate.mp3", art: "music/art/nipsey-hussle-hussle-and-motivate.jfif" },
-  { label: "A$AP Rocky - Tailor Swif", src: "music/asap-rocky-tailor-swif.mp3", art: "music/art/asap-rocky-tailor-swif.jfif" },
-  { label: "French Montana - Ever Since U Left Me", src: "music/french-montana-ever-since-u-left-me.mp3", art: "music/art/french-montana-ever-since-u-left-me.jfif" },
+  { label: "310babii - bad", src: "music/310babii-bad.mp3", art: "music/art/310babii-bad.jpg" },
+  { label: "A$AP Rocky - Tailor Swif", src: "music/asap-rocky-tailor-swif.mp3", art: "music/art/asap-rocky-tailor-swif.jpg" },
+  { label: "ET - 8 Pack", src: "music/et-8-pack.mp3", art: "music/art/et-8-pack.jpg" },
+  { label: "ET - Execution is Worshipped", src: "music/et-execution-is-worshipped.mp3", art: "music/art/et-execution-is-worshipped.jpg" },
+  { label: "ET - I'm On Everything", src: "music/et-im-on-everything.mp3", art: "music/art/et-im-on-everything.jpg" },
+  { label: "ET - We On Fire", src: "music/et-we-on-fire.mp3", art: "music/art/et-we-on-fire.jpg" },
+  { label: "ET - You Don't Believe", src: "music/et-you-dont-believe.mp3", art: "music/art/et-you-dont-believe.jpg" },
+  { label: "French Montana - Ever Since U Left Me", src: "music/french-montana-ever-since-u-left-me.mp3", art: "music/art/french-montana-ever-since-u-left-me.jpg" },
+  { label: "Nipsey Hussle - Hussle & Motivate", src: "music/nipsey-hussle-hussle-and-motivate.mp3", art: "music/art/nipsey-hussle-hussle-and-motivate.jpg" },
 ];
 const MUSIC_NOTE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
 const MUSIC_PAUSE_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
