@@ -3616,32 +3616,6 @@ async function initialWorkoutSync(uid) {
   } catch (e) { console.warn("initial workout sync failed:", e); }
 }
 
-const FUNNY_TOTALS_DOC = 'sunrise_totals_v1';
-const FUNNY_DAILY_LOG_DOC = 'funny_money_daily_v1';
-const _todayKey = () => new Date().toISOString().slice(0, 10);
-async function bumpFunnyMoney(cents = 25) {
-  const uid = window.gymAuthUser?.uid;
-  const fb = window.gymFirebase;
-  if (!uid || !fb) return;
-  try {
-    const totalsRef = fb.doc(fb.db, 'users', uid, 'data', FUNNY_TOTALS_DOC);
-    const dailyRef = fb.doc(fb.db, 'users', uid, 'data', FUNNY_DAILY_LOG_DOC);
-    await Promise.all([
-      fb.setDoc(totalsRef, {
-        value: {
-          lifetimeCents: fb.increment(cents),
-          lifetimeDone: fb.increment(cents > 0 ? 1 : -1),
-        },
-        updatedAt: fb.serverTimestamp(),
-      }, { merge: true }),
-      fb.setDoc(dailyRef, {
-        value: { [_todayKey()]: { gym: fb.increment(Math.max(0, cents)) } },
-        updatedAt: fb.serverTimestamp(),
-      }, { merge: true }),
-    ]);
-  } catch (e) { console.warn('bumpFunnyMoney failed:', e?.message || e); }
-}
-
 function flyReward(originEl) {
   const start = originEl.getBoundingClientRect();
   const launcher = document.querySelector('.hb-launch-btn');
@@ -4931,8 +4905,7 @@ function toggleExerciseDone(btn, forceDone = false) {
       : '<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>';
   }
   btn.setAttribute('aria-label', exLog.done ? 'Mark exercise not done' : 'Mark exercise complete');
-  if (exLog.done) { bumpFunnyMoney(25); flyReward(btn); }
-  else { bumpFunnyMoney(-25); }
+  if (exLog.done) { flyReward(btn); }
   // Close the swipe so they can see the result
   setTimeout(() => {
     wrap.classList.remove('swiped-left', 'swiped-right');
